@@ -1,0 +1,56 @@
+.HomePageContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem; /* Add some space between the sections */
+  }
+  
+  .ImageRecognitionContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem; /* Add some space between the elements */
+  }
+  
+  .ImageRecognitionContainer button,
+  .ImageRecognitionContainer input,
+  .ImageRecognitionContainer img {
+    margin-bottom: 1rem; /* Add some space below each element */
+  }
+  
+  .RegistrationButtons {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    flex-direction: row;
+    align-items: right;
+    gap: 1rem; /* Add some space between the elements */
+  }
+  
+  .ChatContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem; /* Add some space between the elements */
+  }
+  
+  .ChatContainer form {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem; /* Add some space between the input and button */
+  }
+  
+  .ChatHistory {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* Add some space between chat messages */
+  }
+  
+  .ChatMessage {
+    background-color: #f1f1f1;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    width: 100%;
+    max-width: 400px;
+  }
