@@ -6,8 +6,12 @@ export interface IUser extends Document {
   email: string;
   password: string;
   comparePassword: (password: string) => Promise<boolean>;
+  diet: string;
+  allergies: string[];
+  favoriteDishes: string[];
+  likes: string[];
+  dislikes: string[];
 }
-// TODO: Continue from here
 
 const UserSchema: Schema = new Schema({
   username: {
@@ -25,6 +29,26 @@ const UserSchema: Schema = new Schema({
   password: {
     type: String,
     required: true,
+  },
+  diet: {
+    type: String,
+    default: 'none',
+  },
+  allergies: {
+    type: [String],
+    default: [],
+  },
+  favoriteDishes: {
+    type: [String],
+    default: [],
+  },
+  likes: {
+    type: [String],
+    default: [],
+  },
+  dislikes: {
+    type: [String],
+    default: [],
   },
 }, {
   timestamps: true,

@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response, Router } from 'express';
-import User from '../models/user';
+import User from '../models/User';
 
 const userRouter = Router();
 
@@ -10,11 +10,11 @@ userRouter.post('/', async (req: Request, res: Response, next: NextFunction) => 
   const user = new User({
     username,
     email,
-    password
+    password,
   });
   try {
     const savedUser = await user.save();
-    res.status(201).json(savedUser);
+    res.status(201).json(savedUser); 
   } catch (err: any) {
     next(err);
   }
@@ -53,6 +53,12 @@ userRouter.put('/:id', async (req: Request, res: Response) => {
 // Delete a user by ID
 userRouter.delete('/:id', async (req: Request, res: Response) => {
   await User.findByIdAndDelete(req.params.id);
+  res.status(204).end();
+});
+
+// Delete all users
+userRouter.delete('/', async (req: Request, res: Response) => {
+  await User.deleteMany({});
   res.status(204).end();
 });
 

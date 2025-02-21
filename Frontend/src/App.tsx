@@ -4,6 +4,7 @@ import LoginForm from './components/LoginForm';
 import RegistrationForm from './components/RegistrationForm';
 import RegistrationSuccessForm from './components/RegistrationSuccessForm';
 import HomePage from './components/HomePage';
+import './App.css';
 
 const App: React.FC = () => {
   return (

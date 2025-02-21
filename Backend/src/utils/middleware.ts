@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import logger from './logger';
 import jwt from 'jsonwebtoken';
-import User from '../models/user';
+import User from '../models/User';
 
 interface CustomRequest extends Request {
   token?: string | null;
