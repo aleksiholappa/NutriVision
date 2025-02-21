@@ -27,7 +27,7 @@ const RegistrationForm: React.FC = () => {
       });
       setSuccess('Registration successful!');
       setError('');
-      navigate('/login');
+      navigate('/registration-success');
     } catch (error: any) {
       console.error(error.response.data.error);
       setError(error.response.data.error);
