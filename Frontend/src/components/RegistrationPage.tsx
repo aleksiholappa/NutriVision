@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import './RegistrationPage.css';
+
 const baseUrl = '/api/register'
 
-const RegistrationForm: React.FC = () => {
+const RegistrationPage: React.FC = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -32,17 +34,20 @@ const RegistrationForm: React.FC = () => {
       console.error(error.response.data.error);
       setError(error.response.data.error);
       setSuccess('');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
     }
   };
 
   return (
-    <div>
+    <div className="RegistrationPageContainer">
       <h2>Register</h2>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {success && <p style={{ color: 'green' }}>{success}</p>}
       <form onSubmit={handleSubmit}>
         <div>
-          <label>Username:</label>
+          <label>Username</label>
           <input
             type="text"
             value={username}
@@ -51,7 +56,7 @@ const RegistrationForm: React.FC = () => {
           />
         </div>
         <div>
-          <label>Email:</label>
+          <label>Email</label>
           <input
             type="email"
             value={email}
@@ -60,7 +65,7 @@ const RegistrationForm: React.FC = () => {
           />
         </div>
         <div>
-          <label>Password:</label>
+          <label>Password</label>
           <input
             type="password"
             value={password}
@@ -69,7 +74,7 @@ const RegistrationForm: React.FC = () => {
           />
         </div>
         <div>
-          <label>Confirm Password:</label>
+          <label>Confirm Password</label>
           <input
             type="password"
             value={confirmPassword}
@@ -83,4 +88,4 @@ const RegistrationForm: React.FC = () => {
   );
 };
 
-export default RegistrationForm;
+export default RegistrationPage;

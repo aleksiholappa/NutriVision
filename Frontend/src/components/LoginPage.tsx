@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-const baseUrl = '/api/login'
+import './LoginPage.css';
 
-const LoginForm: React.FC = () => {
+const baseUrl = '/api/login';
+
+const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -19,31 +21,34 @@ const LoginForm: React.FC = () => {
       });
       setSuccess('Login successful!');
       setError('');
-      navigate('/');
+      navigate('/:' + response.data._id);
     } catch (error: any) {
       console.error(error.response.data.error);
       setError(error.response.data.error);
       setSuccess('');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
     }
   };
 
   return (
-    <div>
+    <div className="LoginPageContainer">
       <h2>Login</h2>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {success && <p style={{ color: 'green' }}>{success}</p>}
       <form onSubmit={handleSubmit}>
         <div>
-          <label>Email or username:</label>
+          <label>Email or username</label>
           <input
-            type="emailOrUsername"
+            type="text"
             value={emailOrUsername}
             onChange={(e) => setEmailOrUsername(e.target.value)}
             required
           />
         </div>
         <div>
-          <label>Password:</label>
+          <label>Password</label>
           <input
             type="password"
             value={password}
@@ -57,4 +62,4 @@ const LoginForm: React.FC = () => {
   );
 };
 
-export default LoginForm;
+export default LoginPage;

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import './RegistrationSuccessPage.css';
 
-const RegistrationSuccessForm: React.FC = () => {
+const RegistrationSuccessPage: React.FC = () => {
     const navigate = useNavigate();
 
     const handleGoToHomepage = () => {
@@ -13,13 +14,15 @@ const RegistrationSuccessForm: React.FC = () => {
     };
 
     return (
-        <div>
+        <div className="RegistrationSuccessPageContainer">
             <h2>Registration successful!</h2>
             <p>Thank you for registering with NutriVision.</p>
-            <button onClick={handleGoToHomepage}>Go to homepage</button>
-            <button onClick={handleLogin}>Login</button>
+            <div>
+                <button onClick={handleGoToHomepage}>Go to homepage</button>
+                <button onClick={handleLogin}>Login</button>
+            </div>
         </div>
     );
 };
 
-export default RegistrationSuccessForm;
+export default RegistrationSuccessPage;
