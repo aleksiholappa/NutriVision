@@ -8,6 +8,8 @@ body {
     font-family: sans-serif;
     position: relative;
     overflow: hidden;
+    margin: 0;
+    padding: 0;
 }
 
 body::before {

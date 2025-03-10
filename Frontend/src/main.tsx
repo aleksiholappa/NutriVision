@@ -1,11 +1,12 @@
-// filepath: /home/ozzone/codes/NutriVision/Frontend/src/index.tsx
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import store from './components/Store';
+import { Provider } from 'react-redux';
 
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+const root = ReactDOM.createRoot(document.getElementById('root')!);
+
 root.render(
-  <React.StrictMode>
+  <Provider store={store}>
     <App />
-  </React.StrictMode>
+  </Provider>
 );

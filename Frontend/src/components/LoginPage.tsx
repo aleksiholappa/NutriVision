@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { login } from './authSlice';
 import './LoginPage.css';
 
 const baseUrl = '/api/login';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,7 +24,9 @@ const LoginPage: React.FC = () => {
       });
       setSuccess('Login successful!');
       setError('');
-      navigate('/:' + response.data._id);
+      localStorage.setItem('token', response.data.token);
+      dispatch(login(response.data.token));
+      navigate('/chat');
     } catch (error: any) {
       console.error(error.response.data.error);
       setError(error.response.data.error);
