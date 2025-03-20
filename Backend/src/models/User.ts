@@ -1,6 +1,11 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcrypt';
 
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
 export interface IUser extends Document {
   username: string;
   email: string;
@@ -11,7 +16,9 @@ export interface IUser extends Document {
   favoriteDishes: string[];
   likes: string[];
   dislikes: string[];
+  chatHistory: ChatMessage[];
 }
+
 
 const UserSchema: Schema = new Schema({
   username: {
@@ -48,6 +55,15 @@ const UserSchema: Schema = new Schema({
   },
   dislikes: {
     type: [String],
+    default: [],
+  },
+  chatHistory: {
+    type: [
+      {
+        role: {type: String, required: true},
+        content: {type: String, required: true},
+      },
+    ],
     default: [],
   },
 }, {
