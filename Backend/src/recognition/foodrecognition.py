@@ -2,8 +2,12 @@ from clarifai_grpc.channel.clarifai_channel import ClarifaiChannel
 from clarifai_grpc.grpc.api import resources_pb2, service_pb2, service_pb2_grpc
 from clarifai_grpc.grpc.api.status import status_code_pb2
 import csv
+import dotenv
+import os
 
-PAT = ""
+dotenv.load_dotenv()
+
+PAT = os.getenv("PAT", "")
 USER_ID = "holappa"
 APP_ID = "food_recognition"
 MODEL_ID = "food-item-v1-recognition"

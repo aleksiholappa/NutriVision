@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import './ChatPage.css';
 
+const baseImageUrl = 'imgApi/recognize';
+
 const ChatPage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<string>('');
   const [chatInput, setChatInput] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<{ user: string; bot: string }[]>([]);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
@@ -26,26 +28,29 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  const handleImageRecognition = async () => {
-    if (!image) return;
+  const handleImageRecognition = async (): Promise<string> => {
+    if (!image) return '';
 
     const formData = new FormData();
     formData.append('image', image);
 
     try {
-      const response = await fetch('YOUR_IMAGE_RECOGNITION_API_ENDPOINT', {
+      const response = await fetch(baseImageUrl, {
         method: 'POST',
         body: formData,
       });
 
       const data = await response.json();
-      setResult(data.result); // Adjust based on your API response structure
+      setResult(data);
+      console.log('Image recognition result:', data);
+      return data;
     } catch (error) {
       console.error('Error recognizing image:', error);
+      return '';
     }
   };
   
-  const handleLLMChat = async (userMessage: string, result: string | null) => {
+  const handleLLMChat = async (userMessage: string, result: string) => {
     try {
       // const response = await fetch('YOUR_LLM_API_ENDPOINT', {
       //   method: 'POST',
@@ -63,7 +68,8 @@ const ChatPage: React.FC = () => {
       // const data = await response.json();
       // const botMessage = data.response; 
 
-      const botMessage = 'This is a placeholder bot message'; // TODO: Replace with actual bot response
+      const botMessage = result; // TODO: Replace with actual bot response
+      console.log('Bot message:', botMessage);
 
       setChatHistory([{ user: userMessage, bot: botMessage }, ...chatHistory]);
     } catch (error) {
@@ -82,10 +88,11 @@ const ChatPage: React.FC = () => {
     setImage(null);
     setImagePreview(null);
 
+    let recognitionResult = '';
     if (userImage) {
-      await handleImageRecognition();
+      recognitionResult = await handleImageRecognition();
     }
-    handleLLMChat(userMessage, result);
+    await handleLLMChat(userMessage, recognitionResult);
   };
 
 
@@ -141,5 +148,6 @@ const ChatPage: React.FC = () => {
 // TODO: Add earlier chats window
 // TODO: Improve support for Firefox
 // TODO: Add error handling for image upload
+// TODO: Add expandable left sidebar with chat history
 
 export default ChatPage;

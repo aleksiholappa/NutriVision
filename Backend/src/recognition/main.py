@@ -1,6 +1,6 @@
 import json
 import os
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form
 from typing import Optional
 import logging
 import sys
@@ -55,7 +55,7 @@ async def recognize_image(
         os.remove(file_path)
 
         # Return the result
-        return result
+        return str(result)
 
     except Exception as e:
         return {"error": str(e)}
