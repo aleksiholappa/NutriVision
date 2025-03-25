@@ -35,7 +35,7 @@ const login: RequestHandler = async (req: Request, res: Response): Promise<void>
   
   const token = jwt.sign(userForToken, process.env.SECRET as string, { expiresIn: '1h' });
   
-  res.status(200).json({ token, email: user.email, username: user.username });
+  res.status(200).json({ token, userId: user._id, email: user.email, username: user.username });
 };
 
 loginRouter.post('/', login);
