@@ -18,7 +18,24 @@ const ChatPage: React.FC = () => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
-  }, [chatHistory]);
+    if (userId){
+      loadChatHistory();
+    }
+  }, [chatHistory, userId]);
+
+  const loadChatHistory = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/chat/chat_history/${userId}`);
+      const data = await response.json();
+      const formattedHistory = data.map((item: any) => ({
+        user: item.user_message,
+        bot: item.bot_message,
+      }));
+      setChatHistory(formattedHistory.reverse());
+    } catch (error) {
+      console.error('Error loading chat history', error)
+    }
+  }
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -50,26 +67,40 @@ const ChatPage: React.FC = () => {
     }
   };
   
-  const handleLLMChat = async (userMessage: string, result: string) => {
+
+  const handleLLMChat = async (userMessage: string, result: string | null) => {
     try {
-      // const response = await fetch('YOUR_LLM_API_ENDPOINT', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(
-      //     { 
-      //       message: userMessage,  
-      //       result: result
-      //     }
-      //   ),
-      // });
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        console.error('User ID not found!');
+        return;
+      }
 
-      // const data = await response.json();
-      // const botMessage = data.response; 
+      console.log('➡ Sending message to backend:', userMessage, 'Result:', result);
+      const response = await fetch('http://localhost:5000/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(
+          { 
+            message: userMessage,
+            userId: userId,  
+            result: result
+          }
+        ),
+      });
 
-      const botMessage = result; // TODO: Replace with actual bot response
-      console.log('Bot message:', botMessage);
+      if (!response.ok) {
+        throw new Error('Failed to fetch LLM response')
+      }
+
+      const data = await response.json();
+      const botMessage = `${data.nutrition_message}\n\n${data.response}`.trim();
+
+      console.log('Bot message:', botMessage)
+
+      // const botMessage = 'This is a placeholder bot message'; // TODO: Replace with actual bot response
 
       setChatHistory([{ user: userMessage, bot: botMessage }, ...chatHistory]);
     } catch (error) {
@@ -104,7 +135,8 @@ const ChatPage: React.FC = () => {
           {chatHistory.map((chat, index) => (
             <div key={index} className="ChatBubble">
               <div className="UserMessage">{chat.user}</div>
-              <div className="BotMessage">{chat.bot}</div>
+              <div className="BotMessage" style={{ whiteSpace: 'pre-line'}}>{chat.bot}
+              </div>
             </div>
           ))}
         </div>
