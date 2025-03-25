@@ -10,7 +10,7 @@ from pymongo import MongoClient
 app = Flask(__name__)
 CORS(app)
 
-mongo_uri = os.environ.get('MONGODB_URI', 'mongodb+srv://myllymakiossi:GDf9acQ2XaHOWKUn@nutrivision.idmdq.mongodb.net/?retryWrites=true&w=majority&appName=NutriVision')
+mongo_uri = os.environ.get('MONGODB_URI', 'INSERT MONGODB URI HERE')
 client = MongoClient(mongo_uri)
 db = client['NutriVision']
 chat_collection = db['chat_history']
