@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border-radius: 16px;
   width: 100vw;
   height: 100vh;
   margin: 0;
@@ -14,12 +13,13 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 100%;
   box-sizing: border-box;
+  height: calc(100% - 2rem);
+  width: calc(100% - 5rem);
   margin-left: 5rem;
   margin-top: 2rem;
   align-items: center;
-  position: relative;
+  position: absolute;
 }
 
 .ChatContainer h2 {
@@ -34,57 +34,96 @@
   position: absolute;
   bottom: 2rem;
   width: 50rem;
-  height: 4.5rem;
+  min-height: 5rem;
+  max-height: 12rem;
   display: flex;
-  flex-direction: row;
+  flex-direction: column-reverse;
   align-items: center;
-  cursor: text;
-  margin-left: auto;
-  margin-right: auto;
-  border-radius: 2.25rem;   
+  border-radius: 2.5rem;   
   border: 1px solid #d0d0d0;
+  transition: height 0.3s ease;
 }
 
-.ChatInputContainer form {
+.ChatInputContainer.hasImagePreview {
+  min-height: 10rem;
+}
+
+.ChatForm {
+  position: absolute;
   display: flex;
   height: 100%;
-  width: 90%;
-  box-sizing: border-box;
-  justify-content: space-between;
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
 }
 
-.ChatInputContainer form input {
-  width: 100%;
+.ChatForm.hasImagePreview {
+  height: calc(100% - 5rem);
+}
+
+.chat-input {
+  position: relative;
+  width: calc(100% - 10rem);
+  align-content: center;
+  align-self: flex-end;
+  min-height: 4rem;
+  max-height: 11rem;
   border: none;
   outline: none;
-  padding: 1rem;
+  padding: 0.5rem;
   font-size: 1rem;
   color: #d0d0d0;
   caret-color: #d0d0d0;
   background-color: transparent;
+  resize: none;
+  transition: height 0.3s ease;
 }
 
-.ChatInputContainer form button {
+.chat-input.hasImagePreview {
+  max-height: 6rem;
+}
+
+.chat-input::-webkit-scrollbar {
+  width: 8px;
+  background-color: transparent;
+}
+
+.chat-input::-webkit-scrollbar-thumb {
+  background-color: #d0d0d0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.chat-input::-webkit-scrollbar-button {
+  display: none;
+}
+
+.send-button {
   background-color: transparent;
   border: none;
   color: #d0d0d0;
   font-size: 1.5rem;
-  padding: 0 2rem;
-  border-radius: 40px;
+  height: 100%;
+  width: 5rem;
+  border-top-right-radius: 2.5rem;
+  border-bottom-right-radius: 2.5rem;
   cursor: pointer;
 }
 
-.ChatInputContainer form button:hover {
+.send-button:hover {
   color: #ffffff;
 }
 
 .upload-button {
   background-color: transparent;
+  align-content: center;
   border: none;
   color: #d0d0d0;
   font-size: 2rem;
-  padding: 2rem;
-  border-radius: 40px;
+  height: 100%;
+  width: 5rem;
+  border-top-left-radius: 2.5rem;
+  border-bottom-left-radius: 2.5rem;
   cursor: pointer;
 }
 
@@ -94,13 +133,17 @@
 
 .ImagePreviewContainer {
   position: absolute;
-  bottom: 8rem;
-  left: calc(50% - 22rem);
+  top: 0;
+  left: calc(50% - 20rem);
+  height: 5rem;
+  width: 4rem;
+  align-content: center;
 }
 
 .ImagePreviewContainer img {
-  max-width: 100px; 
-  max-height: 100px;
+  position: relative;
+  max-width: 4rem; 
+  max-height: 4rem;
   object-fit: contain;
   border-radius: 1rem;
 }
@@ -115,17 +158,18 @@
   align-items: center;
   overflow-y: auto;
   box-sizing: border-box;
+  border: ipx solid red;
 }
 
 /* For Chrome, Edge, and Safari */
 .ChatHistoryContainer::-webkit-scrollbar {
-  width: 8px; /* Adjust scrollbar width */
+  width: 8px;
   background-color: transparent;
 }
 
 .ChatHistoryContainer::-webkit-scrollbar-thumb {
   background-color: #d0d0d0;
-  border-radius: 4px; /* Rounded corners */
+  border-radius: 4px;
 }
 
 .ChatHistoryContainer::-webkit-scrollbar-button {
@@ -142,14 +186,14 @@
 }
   
 .UserMessage {
-  background-color: #333; /* Darker background for user messages */
+  background-color: #333;
   color: #d0d0d0;
   padding: 0.5rem 1rem;
   border-radius: 1rem;
   margin-bottom: 1rem;
-  align-self: flex-end; /* Align to the left */
-  max-width: 70%; /* Prevent messages from taking up too much width */
-  word-wrap: break-word; /* Wrap long words */
+  align-self: flex-end;
+  max-width: 70%;
+  word-wrap: break-word;
 }
   
 .BotMessage {

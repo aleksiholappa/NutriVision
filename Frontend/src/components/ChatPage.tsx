@@ -14,6 +14,29 @@ const ChatPage: React.FC = () => {
   const [chatInput, setChatInput] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<{ user: string; bot: string }[]>([]);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleSize = () => {
+    if (textareaRef.current) {
+      const element = textareaRef.current;
+      const parentElement = element.parentElement?.parentElement;
+      element.style.height = 'auto';
+      element.style.height = `calc(${element.scrollHeight}px)`;
+  
+      if (parentElement) {
+        parentElement.style.height = 'auto';
+        if (imagePreview) {
+          parentElement.style.height = `calc(${element.scrollHeight}px + 5rem)`;
+        } else {
+          parentElement.style.height = `calc(${element.scrollHeight}px)`;
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    handleSize();
+  }, [chatInput]);
 
   useEffect(() => {
     if (chatHistoryRef.current) {
@@ -38,11 +61,13 @@ const ChatPage: React.FC = () => {
     }
   }
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void = (event) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       setImage(file);
       setImagePreview(URL.createObjectURL(file));
+
+      event.target.value = '';
     }
   };
 
@@ -109,11 +134,11 @@ const ChatPage: React.FC = () => {
   const handleChatSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!chatInput.trim()) return;
+    const userImage = image;
+    if (!chatInput.trim() && !userImage) return;
 
     const userMessage = chatInput.trim();
     setChatInput('');
-    const userImage = image;
     setImage(null);
     setImagePreview(null);
 
@@ -124,6 +149,20 @@ const ChatPage: React.FC = () => {
     await handleLLMChat(userMessage, recognitionResult);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        return;
+      } else {
+        e.preventDefault();
+        document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      }
+    }
+  };
+
+  const inputContainerClass = `ChatInputContainer ${imagePreview ? 'hasImagePreview' : ''}`; 
+  const formClass = `ChatForm ${imagePreview ? 'hasImagePreview' : ''}`;
+  const chatInputClass = `chat-input ${imagePreview ? 'hasImagePreview' : ''}`;
 
   return (
     <div className="ChatPageContainer">
@@ -138,28 +177,36 @@ const ChatPage: React.FC = () => {
             </div>
           ))}
         </div>
-        {imagePreview && (
-          <div className="ImagePreviewContainer">
-            <img src={imagePreview} alt="Preview" />
-          </div>
-        )}
-        <div className="ChatInputContainer">
-          <label htmlFor="image-upload" className="upload-button">
-            &#43; {/* Plus icon */}
-          </label>
-          <input
-            type="file"
-            id="image-upload"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleImageUpload}
-          />
-          <form onSubmit={handleChatSubmit}>
+        <div className={inputContainerClass}>
+          {imagePreview && (
+            <div className="ImagePreviewContainer">
+              <img src={imagePreview} alt="Preview" />
+            </div>
+          )}
+          <form onSubmit={handleChatSubmit} className={formClass}>
+            <button
+              type="button"
+              className="upload-button"
+              onClick={() => document.getElementById('image-upload')?.click()}
+            >
+              &#43; {/* Plus icon */}
+            </button>
             <input
-              type="text"
+              type="file"
+              id="image-upload"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleImageUpload}
+            />
+            <textarea
+              className={chatInputClass}
               value={chatInput}
+              ref={textareaRef}
               onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="Ask NutriVision"
+              rows={1}
+              style={{ resize: 'none' }}
             />
             <button type="submit" className="send-button">
               &#10140; {/* Unicode right arrow */}
