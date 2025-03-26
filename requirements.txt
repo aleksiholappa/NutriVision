@@ -1,0 +1,8 @@
+clarifai-grpc
+fastapi[standard]
+ollama
+pandas
+requests
+flask
+flask-cors
+pymongo

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import './ChatPage.css';
 
 const baseImageUrl = 'imgApi/recognize';
+const baseLLMUrl = 'llmApi/chat';
 
 const ChatPage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -25,7 +26,7 @@ const ChatPage: React.FC = () => {
 
   const loadChatHistory = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/chat/chat_history/${userId}`);
+      const response = await fetch(baseLLMUrl + `/chat_history/${userId}`);
       const data = await response.json();
       const formattedHistory = data.map((item: any) => ({
         user: item.user_message,
@@ -67,8 +68,7 @@ const ChatPage: React.FC = () => {
     }
   };
   
-
-  const handleLLMChat = async (userMessage: string, result: string | null) => {
+  const handleLLMChat = async (userMessage: string, result: string) => {
     try {
       const userId = localStorage.getItem('userId');
       if (!userId) {
@@ -77,7 +77,7 @@ const ChatPage: React.FC = () => {
       }
 
       console.log('➡ Sending message to backend:', userMessage, 'Result:', result);
-      const response = await fetch('http://localhost:5000/chat', {
+      const response = await fetch(baseLLMUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,8 +99,6 @@ const ChatPage: React.FC = () => {
       const botMessage = `${data.nutrition_message}\n\n${data.response}`.trim();
 
       console.log('Bot message:', botMessage)
-
-      // const botMessage = 'This is a placeholder bot message'; // TODO: Replace with actual bot response
 
       setChatHistory([{ user: userMessage, bot: botMessage }, ...chatHistory]);
     } catch (error) {

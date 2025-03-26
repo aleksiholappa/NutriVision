@@ -15,6 +15,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/imgApi/, ''),
       },
+      '/llmApi': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/llmApi/, ''),
+      }
     },
   }
 })
