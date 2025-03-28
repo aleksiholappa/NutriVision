@@ -12,9 +12,14 @@ const ChatPage: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [result, setResult] = useState<string>('');
   const [chatInput, setChatInput] = useState<string>('');
-  const [chatHistory, setChatHistory] = useState<{ user: string; bot: string }[]>([]);
+  const [chatHistory, setChatHistory] = useState<{ user: { message: string; image: string | null}; bot: string }[]>([]);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [userMessagePreview, setUserMessagePreview] = useState<{ message: string; image: string | null }>({
+    message: '',
+    image: null,
+  });
 
   const handleSize = () => {
     if (textareaRef.current) {
@@ -31,12 +36,22 @@ const ChatPage: React.FC = () => {
           parentElement.style.height = `calc(${element.scrollHeight}px)`;
         }
       }
+
+      if (chatHistoryRef.current) {
+        chatHistoryRef.current.style.height = `calc(100% - ${parentElement?.clientHeight}px - 33px)`;
+      }
     }
   };
 
   useEffect(() => {
     handleSize();
-  }, [chatInput]);
+    if ((chatInput.trim().length > 0 || imagePreview) && !loading) {
+      setUserMessagePreview({
+        message: chatInput.trim(),
+        image: imagePreview,
+      });
+    }
+  }, [chatInput, imagePreview]);
 
   useEffect(() => {
     if (chatHistoryRef.current) {
@@ -55,7 +70,7 @@ const ChatPage: React.FC = () => {
         user: item.user_message,
         bot: item.bot_message,
       }));
-      setChatHistory(formattedHistory.reverse());
+      setChatHistory(formattedHistory);
     } catch (error) {
       console.error('Error loading chat history', error)
     }
@@ -123,30 +138,62 @@ const ChatPage: React.FC = () => {
       const data = await response.json();
       const botMessage = `${data.nutrition_message}\n\n${data.response}`.trim();
 
-      console.log('Bot message:', botMessage)
-
-      setChatHistory([{ user: userMessage, bot: botMessage }, ...chatHistory]);
+      setChatHistory(
+        [
+          {
+            user: {
+              message: userMessage,
+              image: userMessagePreview.image,
+            },
+            bot: botMessage
+          }, ...chatHistory
+        ]
+      );
+      setTimeout(() => {}, 100000);
     } catch (error) {
-      console.error('Error chatting with LLM:', error);
+      setChatHistory(
+        [
+          { 
+            user: { 
+              message: userMessage, 
+              image: userMessagePreview.image
+            }, 
+            bot: 'Sorry, I am unable to process your request at the moment.' 
+          }, ...chatHistory
+        ]
+      );
     }
   }
 
   const handleChatSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+    try {
+      event.preventDefault();
 
-    const userImage = image;
-    if (!chatInput.trim() && !userImage) return;
+      const userImage = image;
+      if (!chatInput.trim() && !userImage) return;
 
-    const userMessage = chatInput.trim();
-    setChatInput('');
-    setImage(null);
-    setImagePreview(null);
+      if (chatHistoryRef.current) {
+        chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
+      }
+      
+      const userMessage = chatInput.trim();
+      
+      setLoading(true);
+      setChatInput('');
+      setImage(null);
+      setImagePreview(null);
 
-    let recognitionResult = '';
-    if (userImage) {
-      recognitionResult = await handleImageRecognition();
+      let recognitionResult = '';
+      if (userImage) {
+        recognitionResult = await handleImageRecognition();
+      }
+      await handleLLMChat(userMessage, recognitionResult);
+    } catch (error) {
+      console.error('Error submitting chat:', error);
+    } finally {
+      setLoading(false);
+      setUserMessagePreview({ message: '', image: null });
     }
-    await handleLLMChat(userMessage, recognitionResult);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -155,7 +202,9 @@ const ChatPage: React.FC = () => {
         return;
       } else {
         e.preventDefault();
-        document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        document
+          .querySelector('form')
+          ?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
       }
     }
   };
@@ -169,11 +218,34 @@ const ChatPage: React.FC = () => {
       <div className="ChatContainer">
         <h2>NutriVision</h2>
         <div className="ChatHistoryContainer" ref={chatHistoryRef}>
+          {loading && 
+            <div className="ChatBubble">
+              <div className="UserMessage">
+                {userMessagePreview.image && (
+                  <img src={userMessagePreview.image} alt="User Preview" className="UserImagePreview" />
+                )}
+                {userMessagePreview.message}
+              </div>
+              <div className="BotMessage">
+                <span className="loading-dots">
+                  <span>•</span><span>•</span><span>•</span>
+                </span>
+              </div>  
+            </div>
+          }
           {chatHistory.map((chat, index) => (
             <div key={index} className="ChatBubble">
-              <div className="UserMessage">{chat.user}</div>
-              <div className="BotMessage" style={{ whiteSpace: 'pre-line'}}>{chat.bot}
+              <div className="UserMessage">
+                {chat.user.image && (
+                  <img 
+                    src={chat.user.image} 
+                    alt="User Preview"
+                    className="UserImagePreview" 
+                  />
+                )}
+                {chat.user.message}
               </div>
+              <div className="BotMessage">{chat.bot}</div>
             </div>
           ))}
         </div>
@@ -206,7 +278,6 @@ const ChatPage: React.FC = () => {
               onKeyDown={handleKeyDown}
               placeholder="Ask NutriVision"
               rows={1}
-              style={{ resize: 'none' }}
             />
             <button type="submit" className="send-button">
               &#10140; {/* Unicode right arrow */}
