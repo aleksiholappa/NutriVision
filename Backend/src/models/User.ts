@@ -49,11 +49,7 @@ const UserSchema: Schema = new Schema({
     type: [String],
     default: [],
   },
-  likes: {
-    type: [String],
-    default: [],
-  },
-  dislikes: {
+  dislikedDishes: {
     type: [String],
     default: [],
   },
