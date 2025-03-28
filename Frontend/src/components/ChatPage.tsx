@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './ChatPage.css';
-
+ 
 const baseImageUrl = 'imgApi/recognize';
-const baseLLMUrl = 'llmApi/chat';
+const baseLLMUrl = 'api/llm';
 
 const ChatPage: React.FC = () => {
-  const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [result, setResult] = useState<string>('');
   const [chatInput, setChatInput] = useState<string>('');
   const [chatHistory, setChatHistory] = useState<{ user: { message: string; image: string | null}; bot: string }[]>([]);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
@@ -63,17 +61,21 @@ const ChatPage: React.FC = () => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
-    if (userId){
+    if (localStorage.getItem('token')){
       loadChatHistory();
     }
-  }, [chatHistory, userId]);
+  }, []);
 
   /**
    * Load chat history from the backend
    */
   const loadChatHistory = async () => {
     try {
-      const response = await fetch(baseLLMUrl + `/chat_history/${userId}`);
+      const response = await fetch(baseLLMUrl + '/chat_history', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
       const data = await response.json();
       const formattedHistory = data.map((item: any) => ({
         user: item.user_message,
@@ -118,7 +120,6 @@ const ChatPage: React.FC = () => {
       });
 
       const data = await response.json();
-      setResult(data);
       console.log('Image recognition result:', data);
       return data;
     } catch (error) {
@@ -142,15 +143,15 @@ const ChatPage: React.FC = () => {
       }
 
       console.log('➡ Sending message to backend:', userMessage, 'Result:', result);
-      const response = await fetch(baseLLMUrl, {
+      const response = await fetch(baseLLMUrl + '/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(
           { 
             message: userMessage,
-            userId: userId,  
             result: result
           }
         ),

@@ -8,24 +8,61 @@ import ChatPage from './components/ChatPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './components/Store';
-import { setToken } from './components/authSlice';
+import { setToken, logout } from './components/authSlice';
 import './App.css';
 
 const App: React.FC = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const dispatch = useDispatch();
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
+
+  const refreshToken = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        dispatch(logout()); // Logout if no refresh token is available
+        return;
+      }
+
+      const response = await fetch('/api/login/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('token', data.token);
+        dispatch(setToken(data.token));
+      } else {
+        dispatch(logout());
+      }
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      dispatch(logout());
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       dispatch(setToken(token));
     }
-    setLoading(false); // Set loading to false after token check
+
+    // Periodically refresh the token
+    const interval = setInterval(() => {
+      refreshToken();
+    }, 50 * 60 * 1000); // Refresh every 50 minutes
+
+    setLoading(false);
+
+    return () => clearInterval(interval);
   }, [dispatch]);
 
   if (loading) {
-    return <div>Loading...</div>; // Display loading indicator
+    return <div>Loading...</div>;
   }
 
   return (

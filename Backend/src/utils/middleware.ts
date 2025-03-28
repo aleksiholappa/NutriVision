@@ -34,35 +34,31 @@ const errorHandler: ErrorRequestHandler = (err: any, request: Request, response:
   }
 };
 
-const tokenExtractor = (request: CustomRequest, response: Response, next: NextFunction) => {
-  const authorization = (request as Request).get('authorization');
-  if (authorization && authorization.startsWith('Bearer ')) {
-    request.token = authorization.replace('Bearer ', '');
-  } else {
-    request.token = null;
-  }
-  next();
-};
+const userExtractor = async (request: CustomRequest, response: Response, next: NextFunction): Promise<void> => {
+  try {
+    const authorization = (request as Request).get('Authorization');
+    if (authorization && authorization.startsWith('Bearer ')) {
+      const token = authorization.replace('Bearer ', '');
+      const decodedToken = jwt.verify(token, process.env.SECRET as string) as { id: string };
 
-const userExtractor = async (request: CustomRequest, response: Response, next: NextFunction) => {
-  const authorization = (request as Request).get('authorization');
-  if (authorization && authorization.startsWith('Bearer ')) {
-    const token = authorization.replace('Bearer ', '');
-    const decodedToken = jwt.verify(token, process.env.SECRET as string) as { id: string };
-    if (!token || !decodedToken.id) {
-      return response.status(401).json({ error: 'token missing or invalid' });
+      if (!decodedToken.id) {
+        response.status(401).json({ error: 'token missing or invalid' });
+        return;
+      }
+
+      request.user = await User.findById(decodedToken.id);
+    } else {
+      request.user = null;
     }
-    request.user = await User.findById(decodedToken.id);
-  } else {
-    request.user = null;
+    next();
+  } catch (error: any) {
+    next(error);
   }
-  next();
 };
 
 export {
   requestLogger,
   unknownEndpoint,
   errorHandler,
-  tokenExtractor,
   userExtractor
 }
