@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './ChatPage.css';
  
 const baseImageUrl = 'imgApi/recognize';
@@ -6,6 +7,7 @@ const baseLLMUrl = 'api/llm';
 const maxFileSize = 2 // 2 MB
 
 const ChatPage: React.FC = () => {
+  const navigate = useNavigate();
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState<string>('');
