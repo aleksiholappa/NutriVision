@@ -21,9 +21,15 @@ const ChatPage: React.FC = () => {
     image: null,
   });
 
+  /**
+   * Handle resizing of the chat input and chat history container
+  */
   const handleSize = () => {
+
     if (textareaRef.current) {
+      // element = chat-input element
       const element = textareaRef.current;
+      // parentElement = ChatInputContainer element
       const parentElement = element.parentElement?.parentElement;
       element.style.height = 'auto';
       element.style.height = `calc(${element.scrollHeight}px)`;
@@ -62,6 +68,9 @@ const ChatPage: React.FC = () => {
     }
   }, [chatHistory, userId]);
 
+  /**
+   * Load chat history from the backend
+   */
   const loadChatHistory = async () => {
     try {
       const response = await fetch(baseLLMUrl + `/chat_history/${userId}`);
@@ -76,6 +85,11 @@ const ChatPage: React.FC = () => {
     }
   }
 
+  /**
+   * Handle image upload event
+   * 
+   * @param event - Change event for the image upload input
+   */
   const handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void = (event) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
@@ -86,6 +100,11 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  /**
+   * Handle image recognition
+   * 
+   * @returns - Image recognition result
+   */
   const handleImageRecognition = async (): Promise<string> => {
     if (!image) return '';
 
@@ -108,6 +127,12 @@ const ChatPage: React.FC = () => {
     }
   };
   
+  /**
+   * Handle LLM chat with the backend
+   * 
+   * @param userMessage - User message
+   * @param result - Image recognition result
+   */
   const handleLLMChat = async (userMessage: string, result: string) => {
     try {
       const userId = localStorage.getItem('userId');
@@ -165,6 +190,11 @@ const ChatPage: React.FC = () => {
     }
   }
 
+  /**
+   * Handle chat submission event
+   * 
+   * @param event - Form event for the chat submission
+   */
   const handleChatSubmit = async (event: React.FormEvent) => {
     try {
       event.preventDefault();
@@ -196,6 +226,13 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  /**
+   * Handle key down event for the chat input
+   * Enables sending the chat message on pressing Enter
+   * Adds a new line on pressing Shift + Enter
+   * 
+   * @param e - Keyboard event for the chat input
+   */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       if (e.shiftKey) {
@@ -209,10 +246,17 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  /**
+   * Dynamic class names for the chat input container, form, and chat input
+   * Helps in resizing the chat input and chat history container
+   */
   const inputContainerClass = `ChatInputContainer ${imagePreview ? 'hasImagePreview' : ''}`; 
   const formClass = `ChatForm ${imagePreview ? 'hasImagePreview' : ''}`;
   const chatInputClass = `chat-input ${imagePreview ? 'hasImagePreview' : ''}`;
 
+  /**
+   * Render the ChatPage component 
+   */
   return (
     <div className="ChatPageContainer">
       <div className="ChatContainer">
@@ -289,13 +333,8 @@ const ChatPage: React.FC = () => {
   );
 };
 
-// TODO: Improve the image preview
 // TODO: Add logout button
-// TODO: Add chat animations for user and bot messages
-// TODO: Implement Waiting for bot response animation
 // TODO: Add earlier chats window
-// TODO: Improve support for Firefox
-// TODO: Add error handling for image upload
 // TODO: Add expandable left sidebar with chat history
 
 export default ChatPage;
