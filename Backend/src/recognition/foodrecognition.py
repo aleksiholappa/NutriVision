@@ -111,6 +111,7 @@ def detect_food_items(post_model_outputs_response):
                             "name": concept.name,
                             "confidence": round(concept.value, 4),
                         }
+                        items.append(document)
         else:
             raise Exception("No food items detected in output.")
 

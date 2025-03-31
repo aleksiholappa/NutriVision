@@ -161,7 +161,16 @@ const ChatPage: React.FC = () => {
       }
 
       const data = await response.json();
-      const botMessage = `${data.nutrition_message}\n\n${data.response}`.trim();
+      const foodItems = JSON.parse(result.replace(/'/g, '"'));
+      const resultInfo = foodItems.map((item: any) => 
+      `\n${item.name} (confidence: ${item.confidence})\n` +
+      `    Macronutrients for ${item.name} per 100 grams:\n` +
+      `    Energy: ${item.macronutrients.Kilocalories} kcal\n` +
+      `    Protein: ${item.macronutrients.Protein} g\n` +
+      `    Carbohydrates: ${item.macronutrients.Carbohydrates} g\n` +
+      `    Fat: ${item.macronutrients.Fat} g\n`
+        ).join('\n');
+      const botMessage = `${resultInfo ? `Recognized food items from the image: ${resultInfo}\n\n` : ''}${data.nutrition_message}\n\n${data.response}`.trim();
 
       setChatHistory(
         [
