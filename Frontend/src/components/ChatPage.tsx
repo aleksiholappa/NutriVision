@@ -170,15 +170,22 @@ const ChatPage: React.FC = () => {
       }
 
       const data = await response.json();
-      const foodItems = JSON.parse(result.replace(/'/g, '"'));
-      const resultInfo = foodItems.map((item: any) => 
-      `\n${item.name} (confidence: ${item.confidence})\n` +
-      `    Macronutrients for ${item.name} per 100 grams:\n` +
-      `    Energy: ${item.macronutrients.Kilocalories} kcal\n` +
-      `    Protein: ${item.macronutrients.Protein} g\n` +
-      `    Carbohydrates: ${item.macronutrients.Carbohydrates} g\n` +
-      `    Fat: ${item.macronutrients.Fat} g\n`
-        ).join('\n');
+      let resultInfo = '';
+      if (result) {
+        try {
+          const foodItems = JSON.parse(result.replace(/'/g, '"'));
+          resultInfo = foodItems.map((item: any) => 
+          `\n${item.name} (confidence: ${item.confidence})\n` +
+          `    Macronutrients for ${item.name} per 100 grams:\n` +
+          `    Energy: ${item.macronutrients.Kilocalories} kcal\n` +
+          `    Protein: ${item.macronutrients.Protein} g\n` +
+          `    Carbohydrates: ${item.macronutrients.Carbohydrates} g\n` +
+          `    Fat: ${item.macronutrients.Fat} g\n`
+          ).join('\n');
+        } catch (error) {
+          console.error('Error parsing image recognition result:', error);
+        }
+      }
       const botMessage = `${resultInfo ? `Recognized food items from the image: ${resultInfo}\n\n` : ''}${data.nutrition_message}\n\n${data.response}`.trim();
 
       setChatHistory(
