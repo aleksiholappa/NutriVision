@@ -4,7 +4,13 @@ import cors from 'cors';
 import { MONGODB_URI } from './utils/config';
 import usersRouter from './controllers/users';
 import loginRouter from './controllers/login';
-import { requestLogger, unknownEndpoint, errorHandler, tokenExtractor } from './utils/middleware';
+import llmRouter from './controllers/llm';
+import { 
+  requestLogger, 
+  unknownEndpoint, 
+  errorHandler, 
+  userExtractor, 
+} from './utils/middleware';
 import logger from './utils/logger';
 
 const app = express();
@@ -25,11 +31,13 @@ app.use(cors());
 app.use(express.static('dist'));
 app.use(express.json());
 app.use(requestLogger);
-app.use(tokenExtractor);
+app.use(userExtractor);
 
 app.use('/api/users', usersRouter);
 app.use('/api/login', loginRouter);
 app.use('/api/register', usersRouter);
+
+app.use('/api/llm', llmRouter);
 
 if (process.env.NODE_ENV === 'test') {
   const testingRouter = require('./controllers/testing');
