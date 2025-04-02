@@ -1,22 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './ChatPage.css';
  
 const baseImageUrl = 'imgApi/recognize';
 const baseLLMUrl = 'api/llm';
+const maxFileSize = 2 // 2 MB
 
 const ChatPage: React.FC = () => {
-  const navigate = useNavigate();
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState<string>('');
-  const [chatHistory, setChatHistory] = useState<{ user: { message: string; image: string | null}; bot: string }[]>([]);
+  const [chatHistory, setChatHistory] = useState<{ user: { message: string; image: File | null}; bot: string }[]>([]);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [userMessagePreview, setUserMessagePreview] = useState<{ message: string; image: string | null }>({
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [inputState, setInputState] = useState<{ 
+    message: string; 
+    imagePreview: string | null; 
+  }>({
     message: '',
-    image: null,
+    imagePreview: null,
   });
 
   /**
@@ -50,9 +53,9 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     handleSize();
     if ((chatInput.trim().length > 0 || imagePreview) && !loading) {
-      setUserMessagePreview({
+      setInputState({
         message: chatInput.trim(),
-        image: imagePreview,
+        imagePreview: imagePreview,
       });
     }
   }, [chatInput, imagePreview]);
@@ -95,6 +98,14 @@ const ChatPage: React.FC = () => {
   const handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void = (event) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
+
+      const maxSize = maxFileSize * 1024 * 1024;
+      if (file.size > maxSize) {
+        setAlertMessage(`File too large. Please select a file smaller than ${maxFileSize} MB.`);
+        event.target.value = '';
+        return;
+      }
+
       setImage(file);
       setImagePreview(URL.createObjectURL(file));
 
@@ -107,7 +118,7 @@ const ChatPage: React.FC = () => {
    * 
    * @returns - Image recognition result
    */
-  const handleImageRecognition = async (): Promise<string> => {
+  const handleImageRecognition = async (image: File): Promise<string> => {
     if (!image) return '';
 
     const formData = new FormData();
@@ -134,27 +145,20 @@ const ChatPage: React.FC = () => {
    * @param userMessage - User message
    * @param result - Image recognition result
    */
-  const handleLLMChat = async (userMessage: string, result: string) => {
+  const handleLLMChat = async (userMessage: string, result: string | null, image: File | null) => {
     try {
-      const userId = localStorage.getItem('userId');
-      if (!userId) {
-        console.error('User ID not found!');
-        return;
-      }
+      const formData = new FormData();
+      formData.append('message', userMessage);
+      if (result) formData.append('result', result);
+      if (image) formData.append('image', image);
 
       console.log('➡ Sending message to backend:', userMessage, 'Result:', result);
       const response = await fetch(baseLLMUrl + '/chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(
-          { 
-            message: userMessage,
-            result: result
-          }
-        ),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -169,7 +173,7 @@ const ChatPage: React.FC = () => {
           {
             user: {
               message: userMessage,
-              image: userMessagePreview.image,
+              image: image,
             },
             bot: botMessage
           }, ...chatHistory
@@ -182,7 +186,7 @@ const ChatPage: React.FC = () => {
           { 
             user: { 
               message: userMessage, 
-              image: userMessagePreview.image
+              image: image
             }, 
             bot: 'Sorry, I am unable to process your request at the moment.' 
           }, ...chatHistory
@@ -216,14 +220,14 @@ const ChatPage: React.FC = () => {
 
       let recognitionResult = '';
       if (userImage) {
-        recognitionResult = await handleImageRecognition();
+        recognitionResult = await handleImageRecognition(userImage);
       }
-      await handleLLMChat(userMessage, recognitionResult);
+      await handleLLMChat(userMessage, recognitionResult, userImage);
     } catch (error) {
       console.error('Error submitting chat:', error);
     } finally {
       setLoading(false);
-      setUserMessagePreview({ message: '', image: null });
+      setInputState({ message: '', imagePreview: null});
     }
   };
 
@@ -260,16 +264,22 @@ const ChatPage: React.FC = () => {
    */
   return (
     <div className="ChatPageContainer">
+      {alertMessage && (
+        <div className="CustomAlert">
+          <p>{alertMessage}</p>
+          <button onClick={() => setAlertMessage(null)} className="CloseAlertButton">Close</button>
+        </div>
+      )}
       <div className="ChatContainer">
         <h2>NutriVision</h2>
         <div className="ChatHistoryContainer" ref={chatHistoryRef}>
           {loading && 
             <div className="ChatBubble">
               <div className="UserMessage">
-                {userMessagePreview.image && (
-                  <img src={userMessagePreview.image} alt="User Preview" className="UserImagePreview" />
+                {inputState.imagePreview && (
+                  <img src={inputState.imagePreview} alt="User Preview" className="UserImagePreview" />
                 )}
-                {userMessagePreview.message}
+                {inputState.message}
               </div>
               <div className="BotMessage">
                 <span className="loading-dots">
@@ -283,7 +293,7 @@ const ChatPage: React.FC = () => {
               <div className="UserMessage">
                 {chat.user.image && (
                   <img 
-                    src={chat.user.image} 
+                    src={URL.createObjectURL(chat.user.image)} 
                     alt="User Preview"
                     className="UserImagePreview" 
                   />

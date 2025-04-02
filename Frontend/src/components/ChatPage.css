@@ -244,3 +244,31 @@
   border-radius: 1rem;
   margin-bottom: 1rem;
 }
+
+.CustomAlert {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 16px 24px;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.CloseAlertButton {
+  background-color: #721c24;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 16px;
+}
+
+.CloseAlertButton:hover {
+  background-color: #501217;
+}

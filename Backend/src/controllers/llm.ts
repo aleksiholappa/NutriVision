@@ -2,12 +2,13 @@ import { NextFunction, Request, Response, Router } from 'express';
 import axios from 'axios';
 import logger from '../utils/logger';
 import dotenv from 'dotenv';
+import multer from 'multer';
 
 dotenv.config();
 
 const llmRouter = Router();
-
 const baseUrl = process.env.LLM_API_URL;
+const upload = multer({ storage: multer.memoryStorage() });
 
 interface CustomRequest extends Request {
   token?: string | null;
@@ -15,9 +16,10 @@ interface CustomRequest extends Request {
 }
 
 // Post a message to the LLM
-llmRouter.post('/chat', async (req: CustomRequest, res: Response, next: NextFunction) => {
+llmRouter.post('/chat', upload.single('image'), async (req: CustomRequest, res: Response, next: NextFunction) => {
   const { message, result } = req.body;
   const user = req.user;
+  const image = req.file;
 
   logger.info('User:', user);
 
@@ -27,12 +29,13 @@ llmRouter.post('/chat', async (req: CustomRequest, res: Response, next: NextFunc
   }
 
   const llmMessage = {
-    "Message": message,
-    "ImageRecognitionResult": result,
-    "diet": user.diet,
-    "Allergies": user.allergies,
-    "favouriteDishes": user.favoriteDishes,
-    "dislikedDishes": user.dislikedDishes,
+    message: message,
+    imageRecognitionResult: result,
+    image: image ? image.buffer.toString('base64') : null,
+    diet: user.diet,
+    Allergies: user.allergies,
+    favouriteDishes: user.favoriteDishes,
+    dislikedDishes: user.dislikedDishes,
   }
 
   logger.info('LLM Message:', llmMessage);
