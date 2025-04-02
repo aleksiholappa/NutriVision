@@ -1,13 +1,12 @@
 import { NextFunction, Request, Response, Router } from 'express';
 import axios from 'axios';
-import logger from '../utils/logger';
-import dotenv from 'dotenv';
+import FormData from 'form-data';
+import { LLM_API_URL } from '../utils/config';
 import multer from 'multer';
-
-dotenv.config();
+import logger from '../utils/logger';
 
 const llmRouter = Router();
-const baseUrl = process.env.LLM_API_URL;
+const baseUrl = LLM_API_URL;
 const upload = multer({ storage: multer.memoryStorage() });
 
 interface CustomRequest extends Request {
@@ -28,23 +27,20 @@ llmRouter.post('/chat', upload.single('image'), async (req: CustomRequest, res: 
     return;
   }
 
-  const llmMessage = {
-    message: message,
-    imageRecognitionResult: result,
-    image: image ? image.buffer.toString('base64') : null,
-    diet: user.diet,
-    Allergies: user.allergies,
-    favouriteDishes: user.favoriteDishes,
-    dislikedDishes: user.dislikedDishes,
-  }
+  const formData = new FormData();
+  formData.append('message', message);
+  if (result) formData.append('imageRecognitionResult', JSON.stringify(result));
+  if (image) formData.append('image', image.buffer, image.originalname);
+  formData.append('diet', JSON.stringify(user.diet));
+  formData.append('Allergies', JSON.stringify(user.allergies));
+  formData.append('favouriteDishes', JSON.stringify(user.favoriteDishes));
+  formData.append('dislikedDishes', JSON.stringify(user.dislikedDishes));
 
-  logger.info('LLM Message:', llmMessage);
+  logger.info('LLM Message:', formData);
 
   try {
-    const llmResponse = await axios.post(baseUrl + '/chat', llmMessage, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    const llmResponse = await axios.post(baseUrl + '/chat', formData, {
+      headers: formData.getHeaders(),
     });
 
     logger.info('LLM Response:', llmResponse.data);
