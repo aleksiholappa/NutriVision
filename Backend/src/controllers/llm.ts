@@ -35,6 +35,7 @@ llmRouter.post('/chat', upload.single('image'), async (req: CustomRequest, res: 
   formData.append('Allergies', JSON.stringify(user.allergies));
   formData.append('favouriteDishes', JSON.stringify(user.favoriteDishes));
   formData.append('dislikedDishes', JSON.stringify(user.dislikedDishes));
+  formData.append('userId', user._id.toString());
 
   logger.info('LLM Message:', formData);
 
