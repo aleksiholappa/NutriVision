@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './ChatPage.css';
  
 const baseImageUrl = 'imgApi/recognize';
@@ -7,7 +6,6 @@ const baseLLMUrl = 'api/llm';
 const maxFileSize = 2 // 2 MB
 
 const ChatPage: React.FC = () => {
-  const navigate = useNavigate();
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState<string>('');
@@ -321,6 +319,12 @@ const ChatPage: React.FC = () => {
           ))}
         </div>
       </div>
+      {alertMessage && (
+        <div className="CustomAlert">
+          <p>{alertMessage}</p>
+          <button onClick={() => setAlertMessage(null)} className="CloseAlertButton">Close</button>
+        </div>
+      )}
       <div className="ChatContainer">
         <h2>NutriVision</h2>
         <div className="ChatHistoryContainer" ref={chatHistoryRef}>
