@@ -21,6 +21,19 @@ const ChatPage: React.FC = () => {
     message: '',
     imagePreview: null,
   });
+  const [allChats, setAllChats] = useState<{ id: string; name: string }[]>([
+    { id: '1', name: 'Chat 1' },
+    { id: '2', name: 'Chat 2' },
+    { id: '3', name: 'Chat 3' },
+    { id: '4', name: 'Chat 4' },
+    { id: '5', name: 'Chat 5' },
+    { id: '6', name: 'Chat 6' },
+    { id: '7', name: 'Chat 7' },
+    { id: '8', name: 'Chat 8' },
+    { id: '9', name: 'Chat 9' },
+    { id: '10', name: 'Chat 10' },
+    { id: '11', name: 'Chat 11' },
+  ]);
 
   /**
    * Handle resizing of the chat input and chat history container
@@ -290,6 +303,22 @@ const ChatPage: React.FC = () => {
           <button onClick={() => setAlertMessage(null)} className="CloseAlertButton">Close</button>
         </div>
       )}
+      <div className="Sidebar">
+        <button className="NewChatButton" onClick={() => navigate('/chat')}>
+          <span className="PlusIcon">&#43;</span>
+          <span className="NewChatText">New Chat</span>
+        </button>
+        <div className="LatestChats">
+          <h2>Latest</h2>
+          {allChats.map((chat, index) => (
+            <div key={index} className="ChatItem">
+              <button onClick={() => navigate(`/chat/${chat.id}`)}>
+                {chat.name}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
       <div className="ChatContainer">
         <h2>NutriVision</h2>
         <div className="ChatHistoryContainer" ref={chatHistoryRef}>
