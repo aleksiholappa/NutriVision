@@ -160,10 +160,8 @@
   align-items: center;
   overflow-y: auto;
   box-sizing: border-box;
-  border: ipx solid red;
 }
 
-/* For Chrome, Edge, and Safari */
 .ChatHistoryContainer::-webkit-scrollbar {
   width: 8px;
   background-color: transparent;
@@ -243,4 +241,129 @@
   object-fit: contain;
   border-radius: 1rem;
   margin-bottom: 1rem;
+}
+
+.Sidebar {
+  width: 60px;
+  background-color: rgb(19, 24, 21);
+  height: 100%;
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  transition: width 0.3s ease;
+  transition-delay: 0s;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.Sidebar:hover {
+  width: 200px;
+  transition-delay: 0.5s;
+}
+
+.NewChatButton {
+  position: relative;
+  width: calc(100% - 20px);
+  height: 40px;
+  background-color: transparent;
+  border: none;
+  color: #d0d0d0;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  margin: 100px 10px 20px 10px;
+}
+
+.NewChatButton:hover {
+  background-color: #6b6b6b94;
+}
+
+.PlusIcon {
+  font-size: 40px;
+  margin-right: 10px;
+  margin-left: 3px;
+  color: #d0d0d0;
+}
+
+.NewChatText {
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  white-space: nowrap;  
+}
+
+.Sidebar:hover .NewChatText {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.5s;
+}
+
+.LatestChats {
+  position: relative;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  padding: 10px;
+  white-space: nowrap;
+  width: calc(100% - 20px);
+  height: calc(100% - 250px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.LatestChats::-webkit-scrollbar {
+  width: 8px;
+  background-color: transparent;
+}
+
+.LatestChats::-webkit-scrollbar-thumb {
+  background-color: #d0d0d033;
+  border-radius: 4px;
+}
+
+.LatestChats::-webkit-scrollbar-button {
+  display: none;
+}
+
+.LatestChats h2 {
+  font-size: 14px;
+  padding: 0 12px;
+}
+
+.Sidebar:hover .LatestChats {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.5s;
+}
+
+.ChatItem button {
+  background: none;
+  height: 30px;
+  border: none;
+  color: #818181;
+  font-size: 14px;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  border-radius: 15px;
+  transition: background-color 0.2s ease;
+  padding-left: 15px;
+}
+
+.ChatItem button:hover {
+  background-color: #6b6b6b94;
+}
+
+.ChatItem button:focus {
+  outline: none;
+  background-color: #6b6b6bde;
 }
