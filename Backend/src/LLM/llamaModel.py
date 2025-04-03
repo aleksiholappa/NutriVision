@@ -70,16 +70,25 @@ def sort_foods_input(user_input):
     
 @app.route('/chat', methods=['POST'])
 def chat_handler():
-    data = request.get_json()
+    data = request.form.to_dict(flat=True)
+    image_data = request.files.to_dict(flat=True)
 
-    if not data or 'message' not in data:
-        return jsonify({'error': 'Invalid request, missing message'}), 400
+    if not data:
+        return jsonify({'error': 'Invalid request'}), 400
     
     user_input = data.get('message', '')
+    image = image_data.get('image', None)
+    image_result = data.get('imageRecognitionResult', None)
+    diet = data.get('diet', None)
+    allergies = data.get('Allergies', None)
+    favouriteDishes = data.get('favouriteDishes', None)
+    dislikedDishes = data.get('dislikedDishes', None)
     user_id = data.get('userId', None)
-    result = data.get('result', None)
 
-    print(f"Message: {user_input}, UserID: {user_id}, Result: {result}")
+    print("USER_ID: ", user_id)
+    print("image: ", image)
+    print("image_result: ", image_result)
+    print(f"Message: {user_input}, UserID: {user_id}, Image recoginition result: {image_result}")
 
     if not user_input or not user_id:
         print("Something happens here!")
@@ -158,7 +167,7 @@ def chat_handler():
     #Update chat history in the database
     chat_collection.update_one(
         {'user_id': user_id},
-        {'$push': {'history': {'user_message': user_input, 'nutrition_message': nutrition_message, 'bot_message': reply}}},
+        {'$push': {'history': {'user_message': user_input, 'user_image': image, 'image_result': image_result, 'nutrition_message': nutrition_message, 'bot_message': reply}}},
         upsert=True
     )
 
@@ -167,14 +176,15 @@ def chat_handler():
                     'response': reply,
                     })
 
-@app.route('/login/chat_history/<user_id>', methods=['GET'])
+@app.route('/chat_history/<user_id>', methods=['GET'])
 def get_chat_history(user_id):
     try:
-        history = list(chat_collection.find({'user_id': user_id}))
+        history_list = list(chat_collection.find({'user_id': user_id}))
         #Make sure to return only the history array from database
-        if history:
+        if history_list:
+            history = history_list[0]
             history['_id'] = str(history['_id'])
-            return jsonify(history['history'])
+            return jsonify(history.get('history', []))
         return jsonify({'error': 'No chat history found'}), 404
     except Exception as e:
         print("Error loading chat history: ", e)
