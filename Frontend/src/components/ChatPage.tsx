@@ -80,10 +80,14 @@ const ChatPage: React.FC = () => {
         },
       });
       const data = await response.json();
+      console.log("Chat history response:", data);
       const formattedHistory = data.map((item: any) => ({
-        user: item.user_message,
-        bot: item.bot_message,
-      }));
+        user: {
+          message: item.user_message,
+          image: item.image,
+        },
+        bot: item.nutrition_message + item.bot_message,
+      })).reverse();
       setChatHistory(formattedHistory);
     } catch (error) {
       console.error('Error loading chat history', error)
