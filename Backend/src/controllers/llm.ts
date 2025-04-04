@@ -82,5 +82,39 @@ llmRouter.get('/chat_history', async (req: CustomRequest, res: Response, next: N
   }
 });
 
+// Get chat history for a specific chat ID
+llmRouter.get('/chat_history/:chatId', async (req: CustomRequest, res: Response, next: NextFunction) => {
+  const user = req.user;
+  const { chatId } = req.params;
+
+  logger.info('User:', user);
+  logger.info('Chat ID:', chatId);
+
+  if (!user) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const userId = user._id.toString();
+
+  try {
+    const llmResponse = await axios.get(baseUrl + `/chat_history/${chatId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      params: {
+        userId,
+      },
+    });
+
+    logger.info('LLM Response:', llmResponse.data);
+
+    res.status(200).json(llmResponse.data);
+  } catch (err: any) {
+    logger.err('Error calling LLM API:', err.message);
+    next(err);
+  }
+});
+
 
 export default llmRouter;

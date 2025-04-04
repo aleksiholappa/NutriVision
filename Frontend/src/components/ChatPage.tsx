@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ChatPage.css';
+import { useNavigate, useParams } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
  
 const baseImageUrl = 'imgApi/recognize';
 const baseLLMUrl = 'api/llm';
 const maxFileSize = 2 // 2 MB
 
 const ChatPage: React.FC = () => {
+  const params = useParams();
+  const navigate = useNavigate();
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState<string>('');
@@ -14,6 +18,7 @@ const ChatPage: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [dontLoad, setDontLoad] = useState<boolean>(false);
   const [inputState, setInputState] = useState<{ 
     message: string; 
     imagePreview: string | null; 
@@ -74,34 +79,62 @@ const ChatPage: React.FC = () => {
   }, [chatInput, imagePreview]);
 
   useEffect(() => {
+    if (localStorage.getItem('token') && !dontLoad) {
+      loadChatHistory();
+    } else {
+      setDontLoad(false);
+    }
+  }, [params]);
+
+  
+
+  useEffect(() => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
-    if (localStorage.getItem('token')){
-      loadChatHistory();
-    }
-  }, []);
+  }, [chatHistory]);
 
   /**
    * Load chat history from the backend
    */
   const loadChatHistory = async () => {
     try {
+      const latestChatId: string | null = params['chat-id'] || null;
+
+      console.log('Latest Chat ID:', latestChatId);
+      if (latestChatId) {
+        const response = await fetch(`${baseLLMUrl}/chat_history/${latestChatId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch chat history');
+        }
+        const data = await response.json();
+        const formattedHistory = data.map((item: any) => ({
+          user: item.user_message,
+          bot: item.bot_message,
+        }));
+        setChatHistory(formattedHistory);
+      }
       const response = await fetch(baseLLMUrl + '/chat_history', {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       });
       const data = await response.json();
       console.log("Chat history response:", data);
-      const formattedHistory = data.map((item: any) => ({
-        user: {
-          message: item.user_message,
+      const allChats = data.map((item: any) => ({
+        id: {
+          message: item._id,
           image: item.image,
         },
-        bot: item.nutrition_message + item.bot_message,
+        name: item.nutrition_message + item.name,
       })).reverse();
-      setChatHistory(formattedHistory);
+      setAllChats(allChats);
     } catch (error) {
       console.error('Error loading chat history', error)
     }
@@ -243,8 +276,13 @@ const ChatPage: React.FC = () => {
       if (chatHistoryRef.current) {
         chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
       }
-      
+
       const userMessage = chatInput.trim();
+      
+      if (!params['chat-id']) {
+        handleNewChat(userMessage);
+      }
+      
       
       setLoading(true);
       setChatInput('');
@@ -263,6 +301,29 @@ const ChatPage: React.FC = () => {
       setInputState({ message: '', imagePreview: null});
     }
   };
+
+  const handleNewChat = async (userMessage: string) => {
+    if (!userMessage) userMessage = 'New Chat';
+    const newChatId = uuidv4();
+    setDontLoad(true);
+    navigate(`/chat/${newChatId}`, { replace: true });
+    setAllChats((prev) => [
+      { id: newChatId, name: userMessage },
+      ...prev
+    ]);
+     const response = await fetch(baseLLMUrl + '/chat', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify({ chatId: newChatId, name: userMessage }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to create new chat');
+    }
+    const data = await response.json();
+    console.log('New chat created:', data);
+  }
 
   /**
    * Handle key down event for the chat input
@@ -304,7 +365,7 @@ const ChatPage: React.FC = () => {
         </div>
       )}
       <div className="Sidebar">
-        <button className="NewChatButton" onClick={() => navigate('/chat')}>
+        <button className="NewChatButton" onClick={() => navigate('/chat', { replace: true })}>
           <span className="PlusIcon">&#43;</span>
           <span className="NewChatText">New Chat</span>
         </button>
@@ -312,7 +373,7 @@ const ChatPage: React.FC = () => {
           <h2>Latest</h2>
           {allChats.map((chat, index) => (
             <div key={index} className="ChatItem">
-              <button onClick={() => navigate(`/chat/${chat.id}`)}>
+              <button onClick={() => navigate(`/chat/${chat.id}`, { replace: true })} className="ChatButton">
                 {chat.name}
               </button>
             </div>
