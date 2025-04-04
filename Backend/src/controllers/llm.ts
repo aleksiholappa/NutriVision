@@ -32,7 +32,7 @@ llmRouter.post('/chat', upload.single('image'), async (req: CustomRequest, res: 
   if (result) formData.append('imageRecognitionResult', JSON.stringify(result));
   if (image) formData.append('image', image.buffer, image.originalname);
   formData.append('diet', JSON.stringify(user.diet));
-  formData.append('Allergies', JSON.stringify(user.allergies));
+  formData.append('allergies', JSON.stringify(user.allergies));
   formData.append('favouriteDishes', JSON.stringify(user.favoriteDishes));
   formData.append('dislikedDishes', JSON.stringify(user.dislikedDishes));
   formData.append('userId', user._id.toString());
@@ -67,15 +67,37 @@ llmRouter.get('/chat_history', async (req: CustomRequest, res: Response, next: N
   const userId = user._id.toString();
 
   try {
-    const llmResponse = await axios.get(baseUrl + `/chat_history/${userId}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const llmResponse = await axios.get(baseUrl + `/chat_history/${userId}`, {});
 
     logger.info('LLM Response:', llmResponse.data);
 
     res.status(200).json(llmResponse.data);
+  } catch (err: any) {
+    logger.err('Error calling LLM API:', err.message);
+    next(err);
+  }
+});
+
+llmRouter.post('/chat_history', async (req: CustomRequest, res: Response, next: NextFunction) => {
+  const user = req.user;
+  const { chatId, chatName } = req.body;
+
+  if (!user) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const userId = user._id.toString();
+
+  try {
+    const response = await axios.post(baseUrl + `/chat_history/${userId}`, {
+      chatId,
+      chatName,
+    });
+
+    logger.info('LLM Response:', response.data);
+
+    res.status(200).json(response.data);
   } catch (err: any) {
     logger.err('Error calling LLM API:', err.message);
     next(err);
@@ -99,9 +121,6 @@ llmRouter.get('/chat_history/:chatId', async (req: CustomRequest, res: Response,
 
   try {
     const llmResponse = await axios.get(baseUrl + `/chat_history/${chatId}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
       params: {
         userId,
       },

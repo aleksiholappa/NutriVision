@@ -113,11 +113,14 @@ const ChatPage: React.FC = () => {
           throw new Error('Failed to fetch chat history');
         }
         const data = await response.json();
-        const formattedHistory = data.map((item: any) => ({
-          user: item.user_message,
-          bot: item.bot_message,
-        }));
-        setChatHistory(formattedHistory);
+        const history = data.map((item: any) => ({
+          user: {
+            message: item.user_message,
+            image: item.image,
+          },
+          bot: item.nutrition_message + item.bot_message,
+        })).reverse();
+        setChatHistory(history);
       }
       const response = await fetch(baseLLMUrl + '/chat_history', {
         method: 'GET',
@@ -128,12 +131,9 @@ const ChatPage: React.FC = () => {
       const data = await response.json();
       console.log("Chat history response:", data);
       const allChats = data.map((item: any) => ({
-        id: {
-          message: item._id,
-          image: item.image,
-        },
-        name: item.nutrition_message + item.name,
-      })).reverse();
+        id: item.chatId,
+        name: item.name,
+      }));
       setAllChats(allChats);
     } catch (error) {
       console.error('Error loading chat history', error)
@@ -311,12 +311,12 @@ const ChatPage: React.FC = () => {
       { id: newChatId, name: userMessage },
       ...prev
     ]);
-     const response = await fetch(baseLLMUrl + '/chat', {
+     const response = await fetch(baseLLMUrl + '/chat_history', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
-      body: JSON.stringify({ chatId: newChatId, name: userMessage }),
+      body: JSON.stringify({ id: newChatId, name: userMessage }),
     });
     if (!response.ok) {
       throw new Error('Failed to create new chat');
