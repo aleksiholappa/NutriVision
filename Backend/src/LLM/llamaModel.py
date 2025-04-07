@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
+import ast
 app = Flask(__name__)
 CORS(app)
 
@@ -174,16 +175,22 @@ def chat_handler():
                 temporary_message += f"Carbohydrates: {nutrition_info['Carbohydrates']:.3f} g\n"
                 temporary_message += f"Fiber: {nutrition_info['Fiber']:.3f} g\n"
 
-                nutrition_message += temporary_message
-                    
+            nutrition_message += temporary_message
 
-        if nutrition_message:
-            '''
+    if result:
+        result_list = ast.literal_eval(result)
+        recognized_foods = list(map(lambda food: food.get('name'), result_list))              
+
+    if nutrition_message:
+        if not result:
             prompt = f"""
             You are NutriVision, an AI assistant providing accurate nutritional information.
 
-            Here is the exact nutritional data retrieved for {food_list}. Use this information only—do not estimate or add missing values.
+            Here is the exact nutritional data retrieved for {user_input}. Use this information only—do not estimate or add missing values.
 
+            ---
+            {nutrition_message}
+            ---
             ---
             {nutrition_message}
             ---
@@ -191,26 +198,42 @@ def chat_handler():
             Repeat these values exactly as provided before any analysis. 
             Please, add nutritional values yourself for foods that do not have analysis yet, but add a disclaimer for these foods: **DISCLAIMER** Nutritional information not found in Fineli database. These values might not be correct!
             """
-            '''
+
+            # Append nutritional information to the chat history for the assistant to process
+            chat_history.append({'role': 'assistant', 'content': prompt})
+        else:
             prompt = f"""
-            You are NutriVision, an intelligent and friendly AI assistant that helps users with nutrition analysis and healthy food suggestions.
+            You are NutriVision, an AI assistant providing accurate nutritional information.
 
-            Your job:
-            1. Use the nutritional data provided below to answer food-related questions clearly and accurately.
-            2. If no verified data is available for a food item, try to estimate based on your knowledge, but always add this disclaimer:
-            **DISCLAIMER** Nutritional information not found in the Fineli database. These values might not be correct.
-            3. Respond naturally to greetings like "Hi", "Hello", and follow-up inputs like "Yes", "No", "Thanks", or questions like "What should I eat instead?" or "Is this healthy?".
-            4. If the user gives vague input or continues the conversation, assume context from the previous message and guide them.
-            5. Keep responses short, helpful, and friendly. Ask clarifying questions if needed.
+            For each recognized food item in the following list, {recognized_foods}, provide a detailed analysis of them but without giving any values regarding the nutritional information as they are already known.
+        
+            After the analysis of recognized food items, do the following next:
 
-            Here is the nutritional data for: {user_input}
+            Here is the exact nutritional data retrieved for {user_input}. Use this information only—do not estimate or add missing values.
+
             ---
             {nutrition_message}
             ---
 
-            Respond as NutriVision:
-            """
+            Repeat these values exactly as provided before any analysis. 
+            Please, add nutritional values yourself for foods that do not have analysis yet, but add a disclaimer for these foods: **DISCLAIMER** Nutritional information not found in Fineli database. These values might not be correct!
 
+            Here are the recognized food items from the image: {recognized_foods}
+            """
+            
+            # Append nutritional information to the chat history for the assistant to process
+            chat_history.append({'role': 'assistant', 'content': prompt})
+    else:
+        if result:
+            prompt = f"""
+            You are NutriVision, an AI assistant providing accurate nutritional information.
+
+            User has submitted a food image in which the following food items were recognized: {recognized_foods}.
+
+            For each recognized food item, provide a detailed analysis of them but without giving any values regarding the nutritional information as they are already known.
+            
+            At the end of the analysis, consider healthier alternatives and provide suggestions for better food choices for the dish.
+            """
             # Append nutritional information to the chat history for the assistant to process
             chat_history.append({'role': 'assistant', 'content': prompt})
 
