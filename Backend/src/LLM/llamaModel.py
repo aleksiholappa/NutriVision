@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 import ast
+
 app = Flask(__name__)
 CORS(app)
 
@@ -30,7 +31,8 @@ chat_collection = db['chat_history']
 #Make sure chats are deleted after 30 days
 #chat_collection.create_index("createdAt", expireAfterSeconds=60*60*24*30)
 
-food_data = pandas.read_csv('foodname_EN.csv', encoding="ISO-8859-1", delimiter=';')
+food_data = pandas.read_csv("foodname_EN.csv", encoding="ISO-8859-1", delimiter=";")
+
 
 def get_food_id(food_name):
     #Try to find the best match for a food in Fineli database.
@@ -51,8 +53,9 @@ def get_food_id(food_name):
     
     return "Food ID not found in database."
 
+
 def get_nutritional_values(food_name):
-    #Get food ID and fetch data from Fineli API.
+    # Get food ID and fetch data from Fineli API.
     food_id = get_food_id(food_name)
     if not food_id:
         return f"Food '{food_name}' not found in database."
@@ -60,13 +63,13 @@ def get_nutritional_values(food_name):
     else:
         url = f"https://fineli.fi/fineli/api/v1/foods/{food_id}"
         headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
         }
         response = requests.get(url, headers=headers)
 
         if response.status_code == 200:
             data = response.json()
-            #Get the data from Fineli API and sort it out.
+            # Get the data from Fineli API and sort it out.
             return {
                 "Calories": data.get("energyKcal", "N/A"),
                 "Protein": data.get("protein", "N/A"),
@@ -76,9 +79,10 @@ def get_nutritional_values(food_name):
             }
         else:
             return f"Error fetching data for {food_name}."
-        
+
+
 def sort_foods_input(user_input):
-    #Give prompt for the model to sort out foods from the user input.
+    # Give prompt for the model to sort out foods from the user input.
     prompt = f"""
         I need you to extract a list of foods mentioned in the following user input:
 
@@ -132,29 +136,41 @@ def chat_handler():
 
     if not user_input or not user_id:
         print("Something happens here!")
-        return jsonify({'error': 'Missing message or userId'}), 400
+        return jsonify({"error": "Missing message or userId"}), 400
 
     #Fetch chat history from database
     history_from_db = list(chat_collection.find({'chat_id': chat_id}).sort('_id', -1).limit(10))
     print("History from DB: ", history_from_db)
 
-    #Handle the chat history for the model
+    # Handle the chat history for the model
     if history_from_db:
-        chat_history =[{'role': 'system', 'content': 'You are a helpful nutrition assistant. Analyze given nutritional information, but do not add any values, and give short feedback of the nutritional values and give better and healthier options.'}]
+        chat_history = [
+            {
+                "role": "system",
+                "content": "You are a helpful nutrition assistant. Analyze given nutritional information, but do not add any values, and give short feedback of the nutritional values and give better and healthier options.",
+            }
+        ]
         for item in history_from_db:
-            if item.get('user_message'):
-                chat_history.append({'role': 'user', 'content': item['user_message']})
-            if item.get('bot_message'):
-                chat_history.append({'role': 'assistant', 'content': item['bot_message']})
-    
-    else:
-        chat_history =[{'role': 'system', 'content': 'You are a helpful nutrition assistant. Analyze given nutritional information, but do not add any values, and give short feedback of the nutritional values and give better and healthier options.'}]
-    
-    chat_history.append({'role': 'user', 'content': user_input})
-    
-    model = 'llama3.1'
+            if item.get("user_message"):
+                chat_history.append({"role": "user", "content": item["user_message"]})
+            if item.get("bot_message"):
+                chat_history.append(
+                    {"role": "assistant", "content": item["bot_message"]}
+                )
 
-    #Extract food info from user input
+    else:
+        chat_history = [
+            {
+                "role": "system",
+                "content": "You are a helpful nutrition assistant. Analyze given nutritional information, but do not add any values, and give short feedback of the nutritional values and give better and healthier options.",
+            }
+        ]
+
+    chat_history.append({"role": "user", "content": user_input})
+
+    model = "llama3.1"
+
+    # Extract food info from user input
     food_list = sort_foods_input(user_input)
 
     if food_list:
@@ -179,7 +195,7 @@ def chat_handler():
 
     if result:
         result_list = ast.literal_eval(result)
-        recognized_foods = list(map(lambda food: food.get('name'), result_list))              
+        recognized_foods = list(map(lambda food: food.get("name"), result_list))
 
     if nutrition_message:
         if not result:
@@ -200,7 +216,7 @@ def chat_handler():
             """
 
             # Append nutritional information to the chat history for the assistant to process
-            chat_history.append({'role': 'assistant', 'content': prompt})
+            chat_history.append({"role": "assistant", "content": prompt})
         else:
             prompt = f"""
             You are NutriVision, an AI assistant providing accurate nutritional information.
@@ -220,9 +236,9 @@ def chat_handler():
 
             Here are the recognized food items from the image: {recognized_foods}
             """
-            
+
             # Append nutritional information to the chat history for the assistant to process
-            chat_history.append({'role': 'assistant', 'content': prompt})
+            chat_history.append({"role": "assistant", "content": prompt})
     else:
         if result:
             prompt = f"""
@@ -235,7 +251,7 @@ def chat_handler():
             At the end of the analysis, consider healthier alternatives and provide suggestions for better food choices for the dish.
             """
             # Append nutritional information to the chat history for the assistant to process
-            chat_history.append({'role': 'assistant', 'content': prompt})
+            chat_history.append({"role": "assistant", "content": prompt})
 
         #Generate response
         response = ollama.chat(model=model, messages=chat_history)
