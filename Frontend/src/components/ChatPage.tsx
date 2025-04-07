@@ -3,8 +3,8 @@ import './ChatPage.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
  
-const baseImageUrl = 'imgApi/recognize';
-const baseLLMUrl = 'api/llm';
+const baseImageUrl = '/imgApi/recognize';
+const baseLLMUrl = '/api/llm';
 const maxFileSize = 2 // 2 MB
 
 const ChatPage: React.FC = () => {
@@ -68,7 +68,11 @@ const ChatPage: React.FC = () => {
 
   useEffect(() => {
     if (localStorage.getItem('token') && !dontLoad) {
-      loadChatHistory();
+      const latestChatId: string | null = params['chat-id'] || null;
+      loadAllChats();
+      if (latestChatId) {
+        loadChatHistory(latestChatId);
+      }
     } else {
       setDontLoad(false);
     }
@@ -85,11 +89,8 @@ const ChatPage: React.FC = () => {
   /**
    * Load chat history from the backend
    */
-  const loadChatHistory = async () => {
+  const loadChatHistory = async (latestChatId: string) => {
     try {
-      const latestChatId: string | null = params['chat-id'] || null;
-
-      console.log('Latest Chat ID:', latestChatId);
       if (latestChatId) {
         const response = await fetch(`${baseLLMUrl}/chat_one/${latestChatId}`, {
           method: 'GET',
@@ -101,6 +102,7 @@ const ChatPage: React.FC = () => {
           throw new Error('Failed to fetch chat history');
         }
         const data = await response.json();
+        console.log("Chat history: ", data);
         const history = data.map((item: any) => ({
           user: {
             message: item.user_message,
@@ -110,6 +112,16 @@ const ChatPage: React.FC = () => {
         })).reverse();
         setChatHistory(history);
       }
+    } catch (error) {
+      console.error('Error loading chat history', error)
+    }
+  }
+
+  /**
+   * Load all chats from the backend
+   */
+  const loadAllChats = async () => {
+    try {
       const response = await fetch(baseLLMUrl + '/chat_history', {
         method: 'GET',
         headers: {
@@ -117,9 +129,9 @@ const ChatPage: React.FC = () => {
         },
       });
       const data = await response.json();
-      console.log("Chat history response:", data);
+      console.log("All chats: ", data);
       const allChats = data.map((item: any) => ({
-        id: item.chatId,
+        id: item.id,
         name: item.name,
       })).reverse();
       setAllChats(allChats);

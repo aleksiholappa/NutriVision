@@ -74,15 +74,7 @@ const App: React.FC = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="registration-success" element={<RegistrationSuccessPage />} />
           <Route
-            path="/chat"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <ChatPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/chat/:chat-id"
+            path="/chat/:chat-id?"
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
                 <ChatPage />
