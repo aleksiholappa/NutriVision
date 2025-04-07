@@ -6,6 +6,13 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
+from datetime import datetime
+
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 app = Flask(__name__)
 CORS(app)
@@ -175,7 +182,66 @@ def chat_handler():
     return jsonify({'nutrition_message': nutrition_message,
                     'response': reply,
                     })
+    
+@app.route('/chat_history/<user_id>', methods=['POST'])
+def create_new_chat(user_id):
+    try:
+        data = request.get_json()
 
+        chat_id = data.get('chatId')
+        chat_name = data.get('chatName')
+        print("TÄSSÄ ON CHAT_ID: ", chat_id + " JA TÄSSÄ ON CHAT_NAME: ", chat_name)
+
+        new_chat = {
+            'user_id': user_id,
+            'chat_id': chat_id,
+            'chat_name': chat_name,
+            'history': [],
+        }
+
+        print("New chat: ", new_chat)
+
+        chat_collection.insert_one(new_chat)
+
+        return jsonify({'message': 'New chat created successfully'}), 201
+    except Exception as e:
+        print("Error creating chat:", e)
+        return jsonify({'error': 'Failed to create chat'}), 500
+    
+@app.route('/chat_history/<user_id>', methods=['GET'])
+def get_chat_list(user_id):
+    try:
+        print("TEKSTIÄ")
+        chats = list(chat_collection.find({'user_id': user_id}))
+        chat_list = []
+        for chat in chats:
+            chat_list.append({'id': chat.get('chat_id', 'NO CHAT_ID IN DATABASE'), 'name': chat.get('chat_name', 'NO CHAT_NAME IN DATABASE')})
+        return jsonify(chat_list)
+    except Exception as e:
+        print("Error in get_chat_list: ", e)
+        return jsonify({'error': 'Failed to load chat history'}), 500
+
+@app.route('/chat_one', methods=['GET'])
+def get_chat_history():
+    try:
+        user_id = request.args.get('userId')
+        chat_id = request.args.get('chatId')
+        print("ROUTE HIT! CHAT ID:", chat_id, flush=True)
+        logger.info("UserID: ")
+        history_list = list(chat_collection.find({'user_id': user_id, 'chat_id': chat_id}))
+        #Make sure to return only the history array from database
+        if history_list:
+            history = history_list[0]
+            history['_id'] = str(history['_id'])
+            return jsonify(history.get('history', []))
+        
+        return jsonify({'error': 'No chat history found'}), 404
+    
+    except Exception as e:
+        print("Error loading chat history: ", e)
+        return jsonify({'error': 'Failed to load chat history'}), 500
+    
+'''
 @app.route('/chat_history/<user_id>', methods=['GET'])
 def get_chat_history(user_id):
     try:
@@ -185,10 +251,13 @@ def get_chat_history(user_id):
             history = history_list[0]
             history['_id'] = str(history['_id'])
             return jsonify(history.get('history', []))
+
         return jsonify({'error': 'No chat history found'}), 404
+
     except Exception as e:
         print("Error loading chat history: ", e)
         return jsonify({'error': 'Failed to load chat history'}), 500
+'''
 
 if __name__ == "__main__":
     app.run(debug=True)

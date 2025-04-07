@@ -120,9 +120,10 @@ llmRouter.get('/chat_history/:chatId', async (req: CustomRequest, res: Response,
   const userId = user._id.toString();
 
   try {
-    const llmResponse = await axios.get(baseUrl + `/chat_history/${chatId}`, {
+    const llmResponse = await axios.get(baseUrl + `/chat_one`, {
       params: {
         userId,
+        chatId,
       },
     });
 
