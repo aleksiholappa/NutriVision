@@ -26,19 +26,7 @@ const ChatPage: React.FC = () => {
     message: '',
     imagePreview: null,
   });
-  const [allChats, setAllChats] = useState<{ id: string; name: string }[]>([
-    { id: '1', name: 'Chat 1' },
-    { id: '2', name: 'Chat 2' },
-    { id: '3', name: 'Chat 3' },
-    { id: '4', name: 'Chat 4' },
-    { id: '5', name: 'Chat 5' },
-    { id: '6', name: 'Chat 6' },
-    { id: '7', name: 'Chat 7' },
-    { id: '8', name: 'Chat 8' },
-    { id: '9', name: 'Chat 9' },
-    { id: '10', name: 'Chat 10' },
-    { id: '11', name: 'Chat 11' },
-  ]);
+  const [allChats, setAllChats] = useState<{ id: string; name: string }[]>([]);
 
   /**
    * Handle resizing of the chat input and chat history container
@@ -103,7 +91,7 @@ const ChatPage: React.FC = () => {
 
       console.log('Latest Chat ID:', latestChatId);
       if (latestChatId) {
-        const response = await fetch(`${baseLLMUrl}/chat_history/${latestChatId}`, {
+        const response = await fetch(`${baseLLMUrl}/chat_one/${latestChatId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -133,7 +121,7 @@ const ChatPage: React.FC = () => {
       const allChats = data.map((item: any) => ({
         id: item.chatId,
         name: item.name,
-      }));
+      })).reverse();
       setAllChats(allChats);
     } catch (error) {
       console.error('Error loading chat history', error)
@@ -306,23 +294,27 @@ const ChatPage: React.FC = () => {
     if (!userMessage) userMessage = 'New Chat';
     const newChatId = uuidv4();
     setDontLoad(true);
-    navigate(`/chat/${newChatId}`, { replace: true });
     setAllChats((prev) => [
       { id: newChatId, name: userMessage },
       ...prev
     ]);
-     const response = await fetch(baseLLMUrl + '/chat_history', {
+    const response = await fetch(baseLLMUrl + '/chat_history', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'content-type': 'application/json',
       },
-      body: JSON.stringify({ id: newChatId, name: userMessage }),
+      body: JSON.stringify({
+        chatId: newChatId,
+        chatName: userMessage,
+      }),
     });
     if (!response.ok) {
       throw new Error('Failed to create new chat');
     }
     const data = await response.json();
     console.log('New chat created:', data);
+    navigate(`/chat/${newChatId}`, { replace: true });
   }
 
   /**
@@ -346,6 +338,18 @@ const ChatPage: React.FC = () => {
   };
 
   /**
+   * Handle new chat button click event
+   */
+  const handleNewChatButton = () => {
+    setChatInput('');
+    setImage(null);
+    setImagePreview(null);
+    setInputState({ message: '', imagePreview: null });
+    setChatHistory([]);
+    navigate('/chat', { replace: true });
+  }
+
+  /**
    * Dynamic class names for the chat input container, form, and chat input
    * Helps in resizing the chat input and chat history container
    */
@@ -365,7 +369,7 @@ const ChatPage: React.FC = () => {
         </div>
       )}
       <div className="Sidebar">
-        <button className="NewChatButton" onClick={() => navigate('/chat', { replace: true })}>
+        <button className="NewChatButton" onClick={handleNewChatButton}>
           <span className="PlusIcon">&#43;</span>
           <span className="NewChatText">New Chat</span>
         </button>

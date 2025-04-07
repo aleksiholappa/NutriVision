@@ -20,12 +20,12 @@ llmRouter.post('/chat', upload.single('image'), async (req: CustomRequest, res: 
   const user = req.user;
   const image = req.file;
 
-  logger.info('User:', user);
-
   if (!user) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
+
+  logger.info("Sending message to LLM:", message);
 
   const formData = new FormData();
   formData.append('message', message);
@@ -57,12 +57,12 @@ llmRouter.post('/chat', upload.single('image'), async (req: CustomRequest, res: 
 llmRouter.get('/chat_history', async (req: CustomRequest, res: Response, next: NextFunction) => {
   const user = req.user;
 
-  logger.info('User:', user);
-
   if (!user) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
+
+  logger.info("Getting all chats from LLM");
 
   const userId = user._id.toString();
 
@@ -86,6 +86,7 @@ llmRouter.post('/chat_history', async (req: CustomRequest, res: Response, next: 
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
+  logger.info("Sending new chat to LLM:", chatId, chatName);
 
   const userId = user._id.toString();
 
@@ -105,17 +106,16 @@ llmRouter.post('/chat_history', async (req: CustomRequest, res: Response, next: 
 });
 
 // Get chat history for a specific chat ID
-llmRouter.get('/chat_history/:chatId', async (req: CustomRequest, res: Response, next: NextFunction) => {
+llmRouter.get('/chat_one/:chatId', async (req: CustomRequest, res: Response, next: NextFunction) => {
   const user = req.user;
   const { chatId } = req.params;
-
-  logger.info('User:', user);
-  logger.info('Chat ID:', chatId);
 
   if (!user) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
+
+  logger.info("Getting chat history for chatId:", chatId);
 
   const userId = user._id.toString();
 
