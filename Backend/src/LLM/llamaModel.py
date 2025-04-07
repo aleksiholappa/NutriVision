@@ -6,7 +6,7 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
-
+import ast
 app = Flask(__name__)
 CORS(app)
 
@@ -128,24 +128,63 @@ def chat_handler():
             temporary_message += f"Fiber: {nutrition_info['Fiber']:.3f} g\n"
 
             nutrition_message += temporary_message
-                
+
+    if result:
+        result_list = ast.literal_eval(result)
+        recognized_foods = list(map(lambda food: food.get('name'), result_list))              
 
     if nutrition_message:
-        prompt = f"""
-        You are NutriVision, an AI assistant providing accurate nutritional information.
+        if not result:
+            prompt = f"""
+            You are NutriVision, an AI assistant providing accurate nutritional information.
 
-        Here is the exact nutritional data retrieved for {user_input}. Use this information only—do not estimate or add missing values.
+            Here is the exact nutritional data retrieved for {user_input}. Use this information only—do not estimate or add missing values.
 
-        ---
-        {nutrition_message}
-        ---
+            ---
+            {nutrition_message}
+            ---
 
-        Repeat these values exactly as provided before any analysis. 
-        Please, add nutritional values yourself for foods that do not have analysis yet, but add a disclaimer for these foods: **DISCLAIMER** Nutritional information not found in Fineli database. These values might not be correct!
-        """
+            Repeat these values exactly as provided before any analysis. 
+            Please, add nutritional values yourself for foods that do not have analysis yet, but add a disclaimer for these foods: **DISCLAIMER** Nutritional information not found in Fineli database. These values might not be correct!
+            """
 
-        # Append nutritional information to the chat history for the assistant to process
-        chat_history.append({'role': 'assistant', 'content': prompt})
+            # Append nutritional information to the chat history for the assistant to process
+            chat_history.append({'role': 'assistant', 'content': prompt})
+        else:
+            prompt = f"""
+            You are NutriVision, an AI assistant providing accurate nutritional information.
+
+            For each recognized food item in the following list, {recognized_foods}, provide a detailed analysis of them but without giving any values regarding the nutritional information as they are already known.
+        
+            After the analysis of recognized food items, do the following next:
+
+            Here is the exact nutritional data retrieved for {user_input}. Use this information only—do not estimate or add missing values.
+
+            ---
+            {nutrition_message}
+            ---
+
+            Repeat these values exactly as provided before any analysis. 
+            Please, add nutritional values yourself for foods that do not have analysis yet, but add a disclaimer for these foods: **DISCLAIMER** Nutritional information not found in Fineli database. These values might not be correct!
+
+            Here are the recognized food items from the image: {recognized_foods}
+            """
+            
+            # Append nutritional information to the chat history for the assistant to process
+            chat_history.append({'role': 'assistant', 'content': prompt})
+    else:
+        if result:
+            prompt = f"""
+            You are NutriVision, an AI assistant providing accurate nutritional information.
+
+            User has submitted a food image in which the following food items were recognized: {recognized_foods}.
+
+            For each recognized food item, provide a detailed analysis of them but without giving any values regarding the nutritional information as they are already known.
+            
+            At the end of the analysis, consider healthier alternatives and provide suggestions for better food choices for the dish.
+            """
+            # Append nutritional information to the chat history for the assistant to process
+            chat_history.append({'role': 'assistant', 'content': prompt})
 
     #Generate response
     response = ollama.chat(model=model, messages=chat_history)

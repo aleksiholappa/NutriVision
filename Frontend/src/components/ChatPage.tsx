@@ -153,6 +153,11 @@ const ChatPage: React.FC = () => {
       }
 
       console.log('➡ Sending message to backend:', userMessage, 'Result:', result);
+      
+      if (!userMessage) {
+        userMessage = '.'
+      }
+
       const response = await fetch(baseLLMUrl, {
         method: 'POST',
         headers: {
@@ -166,6 +171,10 @@ const ChatPage: React.FC = () => {
           }
         ),
       });
+
+      if (userMessage === '.') {
+        userMessage = '';
+      }
 
       if (!response.ok) {
         throw new Error('Failed to fetch LLM response')
