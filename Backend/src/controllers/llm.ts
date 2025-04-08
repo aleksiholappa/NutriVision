@@ -16,19 +16,19 @@ interface CustomRequest extends Request {
 
 // Post a message to the LLM
 llmRouter.post('/chat', upload.single('image'), async (req: CustomRequest, res: Response, next: NextFunction) => {
-  const { message, result } = req.body;
+  const { message, result, chatId } = req.body;
   const user = req.user;
   const image = req.file;
-
   if (!user) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
 
-  logger.info("Sending message to LLM:", message);
+  logger.info("Sending message to LLM:", message, chatId);
 
   const formData = new FormData();
   formData.append('message', message);
+  formData.append('chatId', chatId);
   if (result) formData.append('imageRecognitionResult', JSON.stringify(result));
   if (image) formData.append('image', image.buffer, image.originalname);
   formData.append('diet', JSON.stringify(user.diet));

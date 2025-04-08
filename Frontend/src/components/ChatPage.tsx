@@ -196,13 +196,19 @@ const ChatPage: React.FC = () => {
    * @param result - Image recognition result
    */
   const handleLLMChat = async (userMessage: string, result: string | null, image: File | null) => {
+    const chatId: string | null = params['chat-id'] || null;
+    if (!chatId) {
+      console.error("Chat ID is not available.");
+      return;
+    }
     try {
       const formData = new FormData();
       formData.append('message', userMessage);
+      formData.append('chatId', chatId);
       if (result) formData.append('result', result);
       if (image) formData.append('image', image);
 
-      console.log('➡ Sending message to backend:', userMessage, 'Result:', result);
+      console.log('➡ Sending message to backend:', userMessage, 'Result:', result, 'Chat ID:', chatId);
       const response = await fetch(baseLLMUrl + '/chat', {
         method: 'POST',
         headers: {
