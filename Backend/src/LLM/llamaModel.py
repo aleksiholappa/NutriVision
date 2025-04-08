@@ -91,18 +91,19 @@ def chat_handler():
     favouriteDishes = data.get('favouriteDishes', None)
     dislikedDishes = data.get('dislikedDishes', None)
     user_id = data.get('userId', None)
+    chat_id = data.get('chatId', None)
 
     print("USER_ID: ", user_id)
     print("image: ", image)
     print("image_result: ", image_result)
-    print(f"Message: {user_input}, UserID: {user_id}, Image recoginition result: {image_result}")
+    print(f"Message: {user_input}, UserID: {user_id}, ChatID: {chat_id}, Image recoginition result: {image_result}")
 
     if not user_input or not user_id:
         print("Something happens here!")
         return jsonify({'error': 'Missing message or userId'}), 400
 
     #Fetch chat history from database
-    history_from_db = list(chat_collection.find({'user_id': user_id}).sort('_id', -1).limit(10))
+    history_from_db = list(chat_collection.find({'chat_id': chat_id}).sort('_id', -1).limit(10))
     print("History from DB: ", history_from_db)
 
     #Handle the chat history for the model
@@ -173,7 +174,7 @@ def chat_handler():
 
     #Update chat history in the database
     chat_collection.update_one(
-        {'user_id': user_id},
+        {'chat_id': chat_id},
         {'$push': {'history': {'user_message': user_input, 'user_image': image, 'image_result': image_result, 'nutrition_message': nutrition_message, 'bot_message': reply}}},
         upsert=True
     )
@@ -215,7 +216,7 @@ def get_chat_list(user_id):
         chats = list(chat_collection.find({'user_id': user_id}))
         chat_list = []
         for chat in chats:
-            chat_list.append({'id': chat.get('chat_id', 'NO CHAT_ID IN DATABASE'), 'name': chat.get('chat_name', 'NO CHAT_NAME IN DATABASE')})
+            chat_list.append({'id': chat.get('chat_id', ''), 'name': chat.get('chat_name', '')})
         return jsonify(chat_list)
     except Exception as e:
         print("Error in get_chat_list: ", e)
