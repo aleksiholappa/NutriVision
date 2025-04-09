@@ -108,13 +108,13 @@ llmRouter.post('/chat_history', async (req: CustomRequest, res: Response, next: 
 
 llmRouter.delete('/chat_history', async (req: CustomRequest, res: Response, next: NextFunction) => {
   const user = req.user;
-  const { chatId, chatName } = req.body;
+  const { chatId } = req.body;
 
   if (!user) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
-  logger.info("Sending new chat to LLM:", chatId, chatName);
+  logger.info("Removing chat with id:", chatId);
 
   const userId = user._id.toString();
 
