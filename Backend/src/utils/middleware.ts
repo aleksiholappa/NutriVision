@@ -9,9 +9,14 @@ interface CustomRequest extends Request {
 }
 
 const requestLogger = (request: Request, response: Response, next: NextFunction) => {
+  const sanitizedBody = { ...request.body };
+  if (sanitizedBody.password) {
+    sanitizedBody.password = '********';
+  }
+
   logger.info('Method:', request.method);
   logger.info('Path:  ', request.path);
-  logger.info('Body:  ', request.body);
+  logger.info('Body:  ', sanitizedBody);
   logger.info('---');
   next();
 };
