@@ -31,6 +31,7 @@ llmRouter.post('/chat', upload.single('image'), async (req: CustomRequest, res: 
   formData.append('chatId', chatId);
   if (result) formData.append('imageRecognitionResult', JSON.stringify(result));
   if (image) formData.append('image', image.buffer, image.originalname);
+  formData.append('healthConditions', JSON.stringify(user.healthConditions));
   formData.append('diet', JSON.stringify(user.diet));
   formData.append('allergies', JSON.stringify(user.allergies));
   formData.append('favouriteDishes', JSON.stringify(user.favoriteDishes));
