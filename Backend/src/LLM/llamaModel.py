@@ -187,12 +187,12 @@ def chat_handler():
 @app.route('/chat_history/<user_id>', methods=['POST'])
 def create_new_chat(user_id):
     try:
+        #Get chat_id and chat_name from payload
         data = request.get_json()
-
         chat_id = data.get('chatId')
         chat_name = data.get('chatName')
-        print("TÄSSÄ ON CHAT_ID: ", chat_id + " JA TÄSSÄ ON CHAT_NAME: ", chat_name)
 
+        #Create new chat
         new_chat = {
             'user_id': user_id,
             'chat_id': chat_id,
@@ -200,8 +200,7 @@ def create_new_chat(user_id):
             'history': [],
         }
 
-        print("New chat: ", new_chat)
-
+        #Insert new chat to MongoDB
         chat_collection.insert_one(new_chat)
 
         return jsonify({'message': 'New chat created successfully'}), 201
@@ -212,7 +211,7 @@ def create_new_chat(user_id):
 @app.route('/chat_history/<user_id>', methods=['GET'])
 def get_chat_list(user_id):
     try:
-        print("TEKSTIÄ")
+        #Find all chat_ids and chat_names based on user_id
         chats = list(chat_collection.find({'user_id': user_id}))
         chat_list = []
         for chat in chats:
@@ -225,10 +224,11 @@ def get_chat_list(user_id):
 @app.route('/chat_one', methods=['GET'])
 def get_chat_history():
     try:
+        #Get user_id and chat_id from parameters
         user_id = request.args.get('userId')
         chat_id = request.args.get('chatId')
-        print("ROUTE HIT! CHAT ID:", chat_id, flush=True)
-        logger.info("UserID: ")
+        
+        #Find the correct object from MongoDB to get chat history
         history_list = list(chat_collection.find({'user_id': user_id, 'chat_id': chat_id}))
         #Make sure to return only the history array from database
         if history_list:
@@ -242,23 +242,28 @@ def get_chat_history():
         print("Error loading chat history: ", e)
         return jsonify({'error': 'Failed to load chat history'}), 500
     
-'''
-@app.route('/chat_history/<user_id>', methods=['GET'])
-def get_chat_history(user_id):
+@app.route('/chat_history/<user_id>', methods=['DELETE'])
+def delete_chat_history(user_id):
     try:
-        history_list = list(chat_collection.find({'user_id': user_id}))
-        #Make sure to return only the history array from database
-        if history_list:
-            history = history_list[0]
-            history['_id'] = str(history['_id'])
-            return jsonify(history.get('history', []))
+        #Get chat_id from payload
+        data = request.get_json()
+        chat_id = data.get('chatId', None)
+        
+        if not chat_id:
+            return jsonify({'error': 'chatId is required to delete chat history'}), 401
+        
+        #Find the right chat_history object to delete from mongo
+        deleted_chat = db.chat_history.delete_one({'user_id': user_id, 'chat_id': chat_id})
+        print("DELETED CHAT COUNT: ", deleted_chat.deleted_count)
 
-        return jsonify({'error': 'No chat history found'}), 404
+        #Check if correct chat was found and deleted
+        if deleted_chat.deleted_count == 0:
+            return jsonify({'error': 'Chat not found'}), 400
+        return jsonify({'message': 'Chat deleted successfully'}), 200
 
     except Exception as e:
-        print("Error loading chat history: ", e)
-        return jsonify({'error': 'Failed to load chat history'}), 500
-'''
+        print("Error deleting chat history: ", e)
+        return jsonify({'error': 'Failed to delete chat history'}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
