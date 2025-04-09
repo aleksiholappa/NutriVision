@@ -2,9 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import './ChatPage.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
+import { APP_VERSION } from '../utils/config';
  
 const baseImageUrl = '/imgApi/recognize';
 const baseLLMUrl = '/api/llm';
+const logoutUrl = '/api/login/logout';
+const userUrl = '/api/users';
 const maxFileSize = 2 // 2 MB
 
 const ChatPage: React.FC = () => {
@@ -27,6 +30,8 @@ const ChatPage: React.FC = () => {
     imagePreview: null,
   });
   const [allChats, setAllChats] = useState<{ id: string; name: string }[]>([]);
+  const [openUserMenu, setOpenUserMenu] = useState<boolean>(false);
+  const [userIcon, setUserIcon] = useState<string>('U');
 
   /**
    * Handle resizing of the chat input and chat history container
@@ -78,7 +83,24 @@ const ChatPage: React.FC = () => {
     }
   }, [params]);
 
-  
+  useEffect(() => {
+    handleUserIcon();
+  } , []);
+
+  const handleUserIcon = async () => {
+    const response = await fetch(userUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch user data');
+    }
+    const data = await response.json();
+    const userIcon = data.username.charAt(0).toUpperCase();
+    setUserIcon(userIcon);
+  }
 
   useEffect(() => {
     if (chatHistoryRef.current) {
@@ -388,6 +410,26 @@ const ChatPage: React.FC = () => {
       handleNewChat();
     }
   }
+
+  /**
+   * Handle logout button click event
+   */
+  const handleLogout = async () => {
+    const response = await fetch(logoutUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to logout');
+    }
+    const data = await response.json();
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    console.log('Logout successful:', data);
+    navigate('/login', { replace: true });
+  }
       
   /**
    * Dynamic class names for the chat input container, form, and chat input
@@ -429,6 +471,24 @@ const ChatPage: React.FC = () => {
           ))}
         </div>
       </div>
+      <div className="TopBar">
+        <div className="LogoContainer">
+          <h2>NutriVision</h2>
+          <span className="AppVersion">{APP_VERSION}</span>
+        </div>
+        <button className="UserButton" onClick={() => {setOpenUserMenu(!openUserMenu)}}>
+          <span className="UserIcon">{userIcon}</span>
+        </button>
+      </div>
+      <div className={`UserMenu ${openUserMenu ? 'expanded' : ''}`}>
+        <button className="UserProfileButton" onClick={() => {navigate('/profile')}}>
+          Profile
+        </button>
+        <button className="LogoutButton" onClick={() => {handleLogout()}}>
+          <img src="../../public/logout-24.png" alt="Logout Icon" className="LogoutIcon" />
+          Logout
+        </button>
+      </div>
       {alertMessage && (
         <div className="CustomAlert">
           <p>{alertMessage}</p>
@@ -436,7 +496,6 @@ const ChatPage: React.FC = () => {
         </div>
       )}
       <div className="ChatContainer">
-        <h2>NutriVision</h2>
         <div className="ChatHistoryContainer" ref={chatHistoryRef}>
           {loading && 
             <div className="ChatBubble">

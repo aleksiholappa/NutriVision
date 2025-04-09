@@ -2,6 +2,7 @@ import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import logger from './logger';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import { TOKENBLACKLIST } from './config';
 
 interface CustomRequest extends Request {
   token?: string | null;
@@ -59,6 +60,28 @@ const userExtractor = async (request: CustomRequest, response: Response, next: N
   } catch (error: any) {
     next(error);
   }
+};
+
+const isTokenBlacklisted = (req: Request, res: Response, next: NextFunction): void => {
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (token) {
+    // Remove expired tokens from the blacklist
+    const currentTime = Date.now();
+    for (const [blacklistedToken, expirationTime] of TOKENBLACKLIST.entries()) {
+      if (expirationTime <= currentTime) {
+        TOKENBLACKLIST.delete(blacklistedToken);
+      }
+    }
+
+    // Check if the token is blacklisted
+    if (TOKENBLACKLIST.has(token)) {
+      res.status(401).json({ error: 'Token is invalid or blacklisted' });
+      return;
+    }
+  }
+
+  next();
 };
 
 export {

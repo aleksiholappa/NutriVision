@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import User from '../models/User';
 import logger from '../utils/logger';
+import { TOKENBLACKLIST, TOKENEXPIRATIONTIME } from '../utils/config';
 
 const loginRouter = Router();
 
@@ -38,6 +39,19 @@ const login: RequestHandler = async (req: Request, res: Response): Promise<void>
   res.status(200).json({ token, userId: user._id, email: user.email, username: user.username });
 };
 
+const logout: RequestHandler = (req: Request, res: Response): void => {
+  const authorization = req.get('Authorization');
+  if (authorization && authorization.startsWith('Bearer ')) {
+    const token = authorization.replace('Bearer ', '');
+    const expirationTime = Date.now() + TOKENEXPIRATIONTIME;
+    TOKENBLACKLIST.set(token, expirationTime);
+    res.status(200).json({ message: 'Logged out successfully' });
+  } else {
+    res.status(400).json({ error: 'Token is missing' });
+  }
+};
+
 loginRouter.post('/', login);
+loginRouter.post('/logout', logout);
 
 export default loginRouter;

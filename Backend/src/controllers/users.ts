@@ -3,6 +3,11 @@ import User from '../models/User';
 
 const userRouter = Router();
 
+interface CustomRequest extends Request {
+  token?: string | null;
+  user?: any;
+}
+
 // Create a new user
 userRouter.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const { username, email, password } = req.body;
@@ -20,20 +25,14 @@ userRouter.post('/', async (req: Request, res: Response, next: NextFunction) => 
   }
 });
 
-// Get all users
-userRouter.get('/', async (req: Request, res: Response) => {
-  const users = await User.find({});
-  res.json(users);
-});
-
-// Get a specific user by ID
-userRouter.get('/:id', async (req: Request, res: Response) => {
-  const user = await User.findById(req.params.id);
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(404).end();
+// Get user data with token
+userRouter.get('/', async (req: CustomRequest, res: Response) => {
+  const user = req.user;
+  if (!user) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
   }
+  res.json(user);
 });
 
 // Update a user by ID
