@@ -37,9 +37,13 @@ const UserSchema: Schema = new Schema({
     type: String,
     required: true,
   },
+  healthConditions: {
+    type: [String],
+    default: [],
+  },
   diet: {
-    type: String,
-    default: 'none',
+    type: [String],
+    default: [],
   },
   allergies: {
     type: [String],

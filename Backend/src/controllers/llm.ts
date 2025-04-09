@@ -105,6 +105,34 @@ llmRouter.post('/chat_history', async (req: CustomRequest, res: Response, next: 
   }
 });
 
+llmRouter.delete('/chat_history', async (req: CustomRequest, res: Response, next: NextFunction) => {
+  const user = req.user;
+  const { chatId, chatName } = req.body;
+
+  if (!user) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  logger.info("Sending new chat to LLM:", chatId, chatName);
+
+  const userId = user._id.toString();
+
+  try {
+    const response = await axios.delete(baseUrl + `/chat_history/${userId}`, {
+      data: {
+        chatId
+      },
+    });
+
+    logger.info('LLM Response:', response.data);
+
+    res.status(200).json(response.data);
+  } catch (err: any) {
+    logger.err('Error calling LLM API:', err.message);
+    next(err);
+  }
+});
+
 // Get chat history for a specific chat ID
 llmRouter.get('/chat_one/:chatId', async (req: CustomRequest, res: Response, next: NextFunction) => {
   const user = req.user;

@@ -286,7 +286,7 @@ const ChatPage: React.FC = () => {
       const userMessage = chatInput.trim();
       
       if (!params['chat-id']) {
-        handleNewChat(userMessage);
+        handleCreateNewChat(userMessage);
       }
       
       
@@ -308,7 +308,7 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  const handleNewChat = async (userMessage: string) => {
+  const handleCreateNewChat = async (userMessage: string) => {
     if (!userMessage) userMessage = 'New Chat';
     const newChatId = uuidv4();
     setDontLoad(true);
@@ -358,7 +358,7 @@ const ChatPage: React.FC = () => {
   /**
    * Handle new chat button click event
    */
-  const handleNewChatButton = () => {
+  const handleNewChat = () => {
     setChatInput('');
     setImage(null);
     setImagePreview(null);
@@ -367,6 +367,28 @@ const ChatPage: React.FC = () => {
     navigate('/chat', { replace: true });
   }
 
+  const handleDeleteChat = async (chatId: string) => {
+    const response = await fetch(baseLLMUrl + '/chat_history', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        chatId: chatId,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete chat');
+    }
+    const data = await response.json();
+    console.log('Chat deleted:', data);
+    setAllChats((prev) => prev.filter((chat) => chat.id !== chatId));
+    if (params['chat-id'] === chatId) {
+      handleNewChat();
+    }
+  }
+      
   /**
    * Dynamic class names for the chat input container, form, and chat input
    * Helps in resizing the chat input and chat history container
@@ -387,7 +409,7 @@ const ChatPage: React.FC = () => {
         </div>
       )}
       <div className="Sidebar">
-        <button className="NewChatButton" onClick={handleNewChatButton}>
+        <button className="NewChatButton" onClick={handleNewChat}>
           <span className="PlusIcon">&#43;</span>
           <span className="NewChatText">New Chat</span>
         </button>
@@ -395,8 +417,13 @@ const ChatPage: React.FC = () => {
           <h2>Latest</h2>
           {allChats.map((chat, index) => (
             <div key={index} className="ChatItem">
-              <button onClick={() => navigate(`/chat/${chat.id}`, { replace: true })} className="ChatButton">
-                {chat.name}
+              <button onClick={() => navigate(`/chat/${chat.id}`, { replace: true })} 
+                className="ChatButton">
+                <div className="ChatName">{chat.name}</div>
+              </button>
+              <button onClick={() => {handleDeleteChat(chat.id)}} 
+                className="DeleteChatButton">
+                &#10006; {/* Unicode cross mark */}
               </button>
             </div>
           ))}
