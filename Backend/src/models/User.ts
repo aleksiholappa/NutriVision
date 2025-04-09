@@ -11,11 +11,11 @@ export interface IUser extends Document {
   email: string;
   password: string;
   comparePassword: (password: string) => Promise<boolean>;
-  diet: string;
+  healthConditions: string[];
+  diet: string[];
   allergies: string[];
   favoriteDishes: string[];
-  likes: string[];
-  dislikes: string[];
+  dislikedDishes: string[];
   chatHistory: ChatMessage[];
 }
 

@@ -4,6 +4,7 @@ import LoginPage from './components/LoginPage';
 import RegistrationPage from './components/RegistrationPage';
 import HomePage from './components/HomePage';
 import RegistrationSuccessPage from './components/RegistrationSuccessPage';
+import ProfilePage from './components/ProfilePage';
 import ChatPage from './components/ChatPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useSelector, useDispatch } from 'react-redux';
@@ -73,6 +74,7 @@ const App: React.FC = () => {
           <Route path="/register" element={<RegistrationPage />} />
           <Route path="/" element={<HomePage />} />
           <Route path="registration-success" element={<RegistrationSuccessPage />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route
             path="/chat/:chat-id?"
             element={
