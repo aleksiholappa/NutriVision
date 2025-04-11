@@ -5,6 +5,7 @@ import { MONGODB_URI } from './utils/config';
 import usersRouter from './controllers/users';
 import loginRouter from './controllers/login';
 import llmRouter from './controllers/llm';
+import profileRouter from './controllers/profile';
 import { 
   requestLogger, 
   unknownEndpoint, 
@@ -37,6 +38,7 @@ app.use(userExtractor);
 app.use('/api/users', usersRouter);
 app.use('/api/login', loginRouter);
 app.use('/api/register', usersRouter);
+app.use('/api/profile', profileRouter);
 
 app.use('/api/llm', llmRouter);
 

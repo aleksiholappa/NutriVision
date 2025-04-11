@@ -74,7 +74,7 @@ const App: React.FC = () => {
           <Route path="/register" element={<RegistrationPage />} />
           <Route path="/" element={<HomePage />} />
           <Route path="registration-success" element={<RegistrationSuccessPage />} />
-          <Route path="profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route
             path="/chat/:chat-id?"
             element={

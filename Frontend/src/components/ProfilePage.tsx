@@ -20,11 +20,11 @@ const ProfilePage: React.FC = () => {
     try {
       const response = await axios.post(baseUrl,
         {
-          healthConditions,
-          diet,
-          allergies,
-          favoriteDishes,
-          dislikedDishes,
+          healthConditions: healthConditions.split(',').map((item) => item.trim()),
+          diet: diet.split(',').map((item) => item.trim()),
+          allergies: allergies.split(',').map((item) => item.trim()),
+          favoriteDishes: favoriteDishes.split(',').map((item) => item.trim()),
+          dislikedDishes: dislikedDishes.split(',').map((item) => item.trim()),
         },
         {
           headers: {
