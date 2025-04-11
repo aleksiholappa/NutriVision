@@ -489,8 +489,8 @@ const ChatPage: React.FC = () => {
           Profile
         </button>
         <button className="LogoutButton" onClick={() => {handleLogout()}}>
-          <img src="../../public/logout-24.png" alt="Logout Icon" className="LogoutIcon" />
-          Logout
+          <img src="/logout-24.png" alt="Logout Icon" className="LogoutIcon" />
+          Log Out
         </button>
       </div>
       {alertMessage && (
