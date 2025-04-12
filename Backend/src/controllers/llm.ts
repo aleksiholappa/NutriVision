@@ -29,7 +29,7 @@ llmRouter.post('/chat', upload.single('image'), async (req: CustomRequest, res: 
   const formData = new FormData();
   formData.append('message', message);
   formData.append('chatId', chatId);
-  if (result) formData.append('imageRecognitionResult', JSON.stringify(result));
+  if (result) formData.append('imageRecognitionResult', result);
   if (image) formData.append('image', image.buffer, image.originalname);
   formData.append('healthConditions', JSON.stringify(user.healthConditions));
   formData.append('diet', JSON.stringify(user.diet));

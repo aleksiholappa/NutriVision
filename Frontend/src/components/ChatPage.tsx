@@ -74,8 +74,10 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     if (localStorage.getItem('token') && !dontLoad) {
       const latestChatId: string | null = params['chat-id'] || null;
+      console.log('Latest chat ID:', latestChatId);
       loadAllChats();
       if (latestChatId) {
+        console.log('Loading chat history for chat ID:', latestChatId);
         loadChatHistory(latestChatId);
       }
     } else {
@@ -221,12 +223,17 @@ const ChatPage: React.FC = () => {
    * @param userMessage - User message
    * @param result - Image recognition result
    */
-  const handleLLMChat = async (userMessage: string, result: string | null, image: File | null) => {
-    const chatId: string | null = params['chat-id'] || null;
+  const handleLLMChat = async (
+    userMessage: string, 
+    result: string | null, 
+    image: File | null,
+    chatId: string | null = null
+  ) => {
     if (!chatId) {
-      console.error("Chat ID is not available.");
+      setAlertMessage('Chat ID is not available');
       return;
     }
+
     try {
       const formData = new FormData();
       formData.append('message', userMessage);
@@ -311,8 +318,9 @@ const ChatPage: React.FC = () => {
 
       const userMessage = chatInput.trim();
       
-      if (!params['chat-id']) {
-        handleCreateNewChat(userMessage);
+      let chatId: string | null = params['chat-id'] || null;
+      if (!chatId) {
+        chatId = await handleCreateNewChat(userMessage);
       }
       
       
@@ -325,7 +333,7 @@ const ChatPage: React.FC = () => {
       if (userImage) {
         recognitionResult = await handleImageRecognition(userImage);
       }
-      await handleLLMChat(userMessage, recognitionResult, userImage);
+      await handleLLMChat(userMessage, recognitionResult, userImage, chatId);
     } catch (error) {
       console.error('Error submitting chat:', error);
     } finally {
@@ -359,6 +367,7 @@ const ChatPage: React.FC = () => {
     const data = await response.json();
     console.log('New chat created:', data);
     navigate(`/chat/${newChatId}`, { replace: true });
+    return newChatId;
   }
 
   /**

@@ -1,3 +1,4 @@
+import base64
 import ollama
 import os
 import json
@@ -18,6 +19,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 import ast
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 
 app = Flask(__name__)
 CORS(app)
@@ -135,7 +143,7 @@ def chat_handler():
     print(f"Message: {user_input}, UserID: {user_id}, ChatID: {chat_id}, Image recoginition result: {image_result}")
 
     if not user_input or not user_id:
-        print("Something happens here!")
+        logger.info("Something happens here!")
         return jsonify({"error": "Missing message or userId"}), 400
 
     #Fetch chat history from database
@@ -172,6 +180,7 @@ def chat_handler():
 
     # Extract food info from user input
     food_list = sort_foods_input(user_input)
+    logger.info("Food list: %s", food_list)
 
     if food_list:
 
@@ -193,12 +202,13 @@ def chat_handler():
 
             nutrition_message += temporary_message
 
-    if result:
-        result_list = ast.literal_eval(result)
-        recognized_foods = list(map(lambda food: food.get("name"), result_list))
+    if image_result:
+        result_list = ast.literal_eval(image_result)
+        recognized_foods = [food.get("name") for food in result_list]
+        logger.info("Recognized foods: %s", recognized_foods)
 
     if nutrition_message:
-        if not result:
+        if not image_result:
             prompt = f"""
             You are NutriVision, an AI assistant providing accurate nutritional information.
 
@@ -240,7 +250,7 @@ def chat_handler():
             # Append nutritional information to the chat history for the assistant to process
             chat_history.append({"role": "assistant", "content": prompt})
     else:
-        if result:
+        if image_result:
             prompt = f"""
             You are NutriVision, an AI assistant providing accurate nutritional information.
 
