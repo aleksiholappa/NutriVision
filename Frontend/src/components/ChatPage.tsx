@@ -517,7 +517,7 @@ const ChatPage: React.FC = () => {
               <div className="UserMessage">
                 {chat.user.image && (
                   <img 
-                    src={URL.createObjectURL(chat.user.image)} 
+                    src={`data:image/jpeg;base64,${chat.user.image}`} 
                     alt="User Preview"
                     className="UserImagePreview" 
                   />
