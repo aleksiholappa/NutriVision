@@ -312,10 +312,9 @@ def get_chat_history():
 
             #Encode image as base64
             for message in history.get('history', []):
-                if 'image' in message:
+                if 'image' in message and message['image'] is not None:
                     image_binary = message['image']
                     encoded_image = base64.b64encode(image_binary).decode('utf-8')
-
                     message['image'] = encoded_image
 
             return jsonify(history.get('history', []))
