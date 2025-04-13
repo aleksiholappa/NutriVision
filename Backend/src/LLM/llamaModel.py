@@ -1,4 +1,3 @@
-import base64
 import ollama
 import os
 import json
@@ -19,15 +18,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-
-import ast
-import logging
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
 
 app = Flask(__name__)
 CORS(app)
@@ -144,19 +134,19 @@ def chat_handler():
         image_bytes = image.read()
         image_binary = Binary(image_bytes)
 
-    print(
+    logger.info(
         f"Message: {user_input}, UserID: {user_id}, ChatID: {chat_id}, Image recoginition result: {image_result}"
     )
 
     if not user_input or not user_id:
-        print("Something happens here!")
+        logger.info("Something happens here!")
         return jsonify({"error": "Missing message or userId"}), 400
 
     # Fetch chat history from database
     history_from_db = list(
         chat_collection.find({"chat_id": chat_id}).sort("_id", -1).limit(10)
     )
-    print("History from DB: ", history_from_db)
+    logger.info("History from DB: ", history_from_db)
 
     # Handle the chat history for the model
     if history_from_db:
@@ -253,9 +243,9 @@ def chat_handler():
         response = ollama.chat(model=model, messages=chat_history)
         reply = response["message"]["content"].strip()
 
-        print(f"User Message: {user_input}")
-        print(f"Nutrition message: {nutrition_message}")
-        print(f"Reply: {reply}")
+        logger.info(f"User Message: {user_input}")
+        logger.info(f"Nutrition message: {nutrition_message}")
+        logger.info(f"Reply: {reply}")
 
         # Update chat history in the database
         chat_collection.update_one(
@@ -292,8 +282,8 @@ def chat_handler():
         response = ollama.chat(model=model, messages=chat_history)
         reply = response["message"]["content"].strip()
 
-        print(f"User Message: {user_input}")
-        print(f"Reply: {reply}")
+        logger.info(f"User Message: {user_input}")
+        logger.info(f"Reply: {reply}")
 
         # Update chat history in the database
         chat_collection.update_one(
@@ -338,7 +328,7 @@ def create_new_chat(user_id):
 
         return jsonify({"message": "New chat created successfully"}), 201
     except Exception as e:
-        print("Error creating chat:", e)
+        logger.error("Error creating chat:", e)
         return jsonify({"error": "Failed to create chat"}), 500
 
 
@@ -354,7 +344,7 @@ def get_chat_list(user_id):
             )
         return jsonify(chat_list)
     except Exception as e:
-        print("Error in get_chat_list: ", e)
+        logger.error("Error in get_chat_list: ", e)
         return jsonify({"error": "Failed to load chat history"}), 500
 
 
@@ -386,7 +376,7 @@ def get_chat_history():
         return jsonify({"error": "No chat history found"}), 404
 
     except Exception as e:
-        print("Error loading chat history: ", e)
+        logger.error("Error loading chat history: ", e)
         return jsonify({"error": "Failed to load chat history"}), 500
 
 
@@ -404,7 +394,7 @@ def delete_chat_history(user_id):
         deleted_chat = db.chat_history.delete_one(
             {"user_id": user_id, "chat_id": chat_id}
         )
-        print("DELETED CHAT COUNT: ", deleted_chat.deleted_count)
+        logger.info("DELETED CHAT COUNT: ", deleted_chat.deleted_count)
 
         # Check if correct chat was found and deleted
         if deleted_chat.deleted_count == 0:
@@ -412,7 +402,7 @@ def delete_chat_history(user_id):
         return jsonify({"message": "Chat deleted successfully"}), 200
 
     except Exception as e:
-        print("Error deleting chat history: ", e)
+        logger.error("Error deleting chat history: ", e)
         return jsonify({"error": "Failed to delete chat history"}), 500
 
 
