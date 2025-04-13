@@ -126,14 +126,32 @@ const ChatPage: React.FC = () => {
           throw new Error('Failed to fetch chat history');
         }
         const data = await response.json();
+        
         console.log("Chat history: ", data);
-        const history = data.map((item: any) => ({
-          user: {
-            message: item.user_message,
-            image: item.image,
-          },
-          bot: item.nutrition_message + item.bot_message,
-        })).reverse();
+        const history = data.map((item: any) => {
+          let file: File | null = null;
+
+          if (item.image) {
+            const byteString = atob(item.image.split(',')[1]); // Decode Base64
+            const mimeString = item.image.split(',')[0].split(':')[1].split(';')[0];
+
+            const byteArray = new Uint8Array(byteString.length);
+            for (let i = 0; i < byteString.length; i++) {
+              byteArray[i] = byteString.charCodeAt(i);
+            }
+
+            const blob = new Blob([byteArray], { type: mimeString });
+            file = new File([blob], 'image.png', { type: mimeString });
+          }
+
+          return {
+            user: {
+              message: item.user_message,
+              image: file,
+            },
+            bot: item.nutrition_message + item.bot_message,
+          }
+      }).reverse();
         setChatHistory(history);
       }
     } catch (error) {
@@ -280,7 +298,6 @@ const ChatPage: React.FC = () => {
           }, ...chatHistory
         ]
       );
-      setTimeout(() => {}, 100000);
     } catch (error) {
       setChatHistory(
         [
@@ -526,7 +543,7 @@ const ChatPage: React.FC = () => {
               <div className="UserMessage">
                 {chat.user.image && (
                   <img 
-                    src={`data:image/jpeg;base64,${chat.user.image}`} 
+                    src={URL.createObjectURL(chat.user.image)} 
                     alt="User Preview"
                     className="UserImagePreview" 
                   />

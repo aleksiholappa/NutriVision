@@ -9,6 +9,7 @@ from pymongo import MongoClient
 from datetime import datetime
 from bson import Binary
 import base64
+import imghdr
 from datetime import datetime, timezone
 
 import logging
@@ -369,7 +370,8 @@ def get_chat_history():
                 if "image" in message and message["image"] is not None:
                     image_binary = message["image"]
                     encoded_image = base64.b64encode(image_binary).decode("utf-8")
-                    message["image"] = encoded_image
+                    image_type = imghdr.what(None, h=image_binary)
+                    message["image"] = f"data:image/{image_type};base64,{encoded_image}"
 
             return jsonify(history.get("history", []))
 

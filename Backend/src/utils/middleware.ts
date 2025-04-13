@@ -88,5 +88,6 @@ export {
   requestLogger,
   unknownEndpoint,
   errorHandler,
-  userExtractor
+  userExtractor,
+  isTokenBlacklisted,
 }

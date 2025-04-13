@@ -11,6 +11,7 @@ import {
   unknownEndpoint, 
   errorHandler, 
   userExtractor, 
+  isTokenBlacklisted
 } from './utils/middleware';
 import logger from './utils/logger';
 
@@ -34,6 +35,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(requestLogger);
 app.use(userExtractor);
+app.use(isTokenBlacklisted);
 
 app.use('/api/users', usersRouter);
 app.use('/api/login', loginRouter);
