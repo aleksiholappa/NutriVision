@@ -108,11 +108,7 @@ const ChatPage: React.FC = () => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
-    if (localStorage.getItem('token')){
-      loadChatHistory();
-    }
   }, []);
-  }, [chatHistory]);
 
   /**
    * Load chat history from the backend
