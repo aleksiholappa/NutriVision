@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import User from '../models/User';
 
 interface CustomRequest extends Request {
@@ -8,9 +8,8 @@ interface CustomRequest extends Request {
 
 const profileRouter = Router();
 
-// Update profile
-profileRouter.post('/', async (req: CustomRequest, res: Response) => {
-  console.log('req_user:', req.user);
+// Update profile information
+profileRouter.post('/', async (req: CustomRequest, res: Response, next: NextFunction) => {
   const user = req.user;
   if (!user) {
     res.status(401).json({ error: 'Unauthorized' });
@@ -18,20 +17,38 @@ profileRouter.post('/', async (req: CustomRequest, res: Response) => {
   }
   const { healthConditions, diet, allergies, favoriteDishes, dislikedDishes } = req.body;
   try {
-    user.healthConditions = healthConditions;
-    user.diet = diet;
-    user.allergies =  allergies;
-    user.favoriteDishes = favoriteDishes;
-    user.dislikedDishes = dislikedDishes;
-
+    user.healthConditions = healthConditions || [];
+    user.diet = diet || [];
+    user.allergies = allergies || [];
+    user.favoriteDishes = favoriteDishes || [];
+    user.dislikedDishes = dislikedDishes || [];
     const updatedUser = await user.save();
-    console.log('User profile updated:', updatedUser);
     res.json(updatedUser);
-    return;
   } catch (err: any) {
     console.error(err.message);
-    res.status(500).json({ error: 'Failed to update profile' });
+    next(err);
+  }
+});
+
+// Get profile information
+profileRouter.get('/', async (req: CustomRequest, res: Response, next: NextFunction) => {
+  const user = req.user;
+  if (!user) {
+    res.status(401).json({ error: 'Unauthorized' });
     return;
+  }
+  try {
+    const userProfile = await User.findById(user._id, {
+      healthConditions: 1,
+      diet: 1,
+      allergies: 1,
+      favoriteDishes: 1,
+      dislikedDishes: 1,
+    });
+    res.json(userProfile);
+  } catch (err: any) {
+    console.error(err.message);
+    next(err);
   }
 });
 

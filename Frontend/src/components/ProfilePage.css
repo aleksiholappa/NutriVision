@@ -1,5 +1,4 @@
 .ProfilePageContainer {
-    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -17,7 +16,6 @@
 .ProfilePageContainer form {
     display: flex;
     flex-direction: column;
-    align-items: center;
     padding: 2rem;
     border-radius: 8px;
     width: 100%;
@@ -26,7 +24,6 @@
 
 .ProfilePageContainer form div {
     margin-bottom: 0.5rem;
-    width: 100%;
 }
 
 .ProfilePageContainer form label {
@@ -46,18 +43,162 @@
     box-sizing: border-box;
 }
 
-.ProfilePageContainer form button {
-    padding: 0.75rem 1.5rem;
-    font-size: 1.2rem;
-    margin-top: 0.5rem;
-    color: #ffffff;
+.ProfileContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+  
+.ProfileContainer h2 {
+    font-size: 2rem;
+    margin: 0;
+}
+  
+.FeatureContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding-right: 2rem;
+}
+
+.SaveButton {
     background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+  
+.SaveButton:hover {
+    background-color: #0056b3;
+}
+
+.ExitButton {
+    background-color: #ff0000;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+  
+.ExitButton:hover {
+    background-color: #cc0000;
+}
+
+.ItemsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+  
+.Item {
+    display: inline-flex;
+    align-items: center;
+    background-color: #e0e0e0;
+    border-radius: 16px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: #333;
+    white-space: nowrap;
+}
+
+.AddItemButton {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-left: auto;
+}
+
+.AddItemButton:hover {
+    background-color: #0056b3;
+}
+  
+.RemoveItemButton {
+    background: none;
+    border: none;
+    color: #ff0000;
+    font-size: 1rem;
+    margin-left: 0.5rem;
+    cursor: pointer;
+}
+  
+.RemoveItemButton:hover {
+    color: #cc0000;
+}
+
+.Window {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+  
+.WindowContent {
+    background-color: #333;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+  
+.WindowContent h3 {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+  
+.WindowContent input {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    box-sizing: border-box;
+}
+  
+.WindowActions {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+  
+.WindowActions button {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
-
-.ProfilePageContainer form button:hover {
+  
+.WindowActions button {
+    background-color: #007bff;
+    color: white;
+}
+  
+.WindowActions button:hover {
     background-color: #0056b3;
 }
