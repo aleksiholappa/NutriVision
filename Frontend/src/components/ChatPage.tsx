@@ -594,9 +594,7 @@ const ChatPage: React.FC = () => {
   );
 };
 
-// TODO: Fix "Chat ID is not available" error when sending the first ever message
 // TODO: Fix sending messages while the answer is loading bug
 // TODO: Add profile page
-// TODO: Update token refresh logic
 
 export default ChatPage;

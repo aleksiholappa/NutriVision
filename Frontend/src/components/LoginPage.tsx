@@ -18,10 +18,11 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      const response = await axios.post(baseUrl, {
-        emailOrUsername,
-        password,
-      });
+      const response = await axios.post(
+        baseUrl, 
+        { emailOrUsername,password }, 
+        { withCredentials: true }
+      );
       setSuccess('Login successful!');
       setError('');
       localStorage.setItem('token', response.data.token);

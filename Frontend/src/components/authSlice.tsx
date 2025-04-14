@@ -22,12 +22,12 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.token = null;
     },
-    setToken: (state, action: PayloadAction<string | null>) => {
+    validateToken: (state, action: PayloadAction<string>) => {
+      state.isAuthenticated = true;
       state.token = action.payload;
-      state.isAuthenticated = !!action.payload;
-    }
+    },
   },
 });
 
-export const { login, logout, setToken } = authSlice.actions;
+export const { login, logout, validateToken } = authSlice.actions;
 export default authSlice.reducer;

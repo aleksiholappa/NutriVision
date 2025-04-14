@@ -9,53 +9,79 @@ import ChatPage from './components/ChatPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './components/Store';
-import { setToken, logout } from './components/authSlice';
+import { validateToken, logout } from './components/authSlice';
 import './App.css';
+import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
 const App: React.FC = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
 
-  const refreshToken = async () => {
+  const validate = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      dispatch(logout());
+      return;
+    }
+
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        dispatch(logout()); // Logout if no refresh token is available
-        return;
-      }
-
-      const response = await fetch('/api/login/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem('token', data.token);
-        dispatch(setToken(data.token));
+      const response = await axios.post('/api/token/validate', { token });
+      if (response.status === 200) {
+        dispatch(validateToken(token));
       } else {
         dispatch(logout());
       }
     } catch (error) {
-      console.error('Error refreshing token:', error);
+      console.error('Token validation failed:', error);
       dispatch(logout());
     }
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      dispatch(setToken(token));
+  const refreshToken = async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      dispatch(logout());
+      return;
     }
+  
+    try {
+      const response = await axios.post('/api/token/refresh', {}, { withCredentials: true });
+      if (response.status === 200) {
+        const { token } = response.data;
+        localStorage.setItem('token', token);
+        dispatch(validateToken(token)); // Update Redux state
+      } else {
+        dispatch(logout());
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      dispatch(logout());
+    }
+  };
 
-    // Periodically refresh the token
+  const isTokenExpiringSoon = (token: string): boolean => {
+    try {
+      const decoded: { exp: number } = jwtDecode(token);
+      const currentTime = Math.floor(Date.now() / 1000);
+      const timeLeft = decoded.exp - currentTime;
+      return timeLeft < 5 * 60; // Refresh if less than 5 minutes left
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return true;
+    }
+  };
+
+  useEffect(() => {
+    validate();
+
     const interval = setInterval(() => {
-      refreshToken();
-    }, 50 * 60 * 1000); // Refresh every 50 minutes
+      const currentToken = localStorage.getItem('token');
+      if (currentToken && isTokenExpiringSoon(currentToken)) {
+        refreshToken();
+      }
+    }, 1 * 60 * 1000); // Check every 1 minute
 
     setLoading(false);
 
