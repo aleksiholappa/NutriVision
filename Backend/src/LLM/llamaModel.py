@@ -95,7 +95,6 @@ def sort_foods_input(user_input):
     response = ollama.chat(
         model="llama3.1", messages=[{"role": "user", "content": prompt}]
     )
-    print("TÄSSÄ ON RESPONSE: ", response)
     sorted_foods = response.get("message", []).get("content","").strip()
 
     potential_foods_comma_split = sorted_foods.split(',')
@@ -126,8 +125,9 @@ def chat_handler():
     user_input = data.get("message", "")
     image = image_data.get("image", None)
     image_result = data.get("imageRecognitionResult", None)
+    healthConditions = data.get("healthConditions", None)
     diet = data.get("diet", None)
-    allergies = data.get("Allergies", None)
+    allergies = data.get("allergies", None)
     favouriteDishes = data.get("favouriteDishes", None)
     dislikedDishes = data.get("dislikedDishes", None)
     user_id = data.get("userId", None)
@@ -235,7 +235,13 @@ def chat_handler():
 
     if image_result_info:
         prompt = f"""
-        Analyze the following image recognition results in the context of the user's query.\n\nImage Results:\n---\n{image_result_info}\n---\n\nUser Query: '{user_input}'
+        Analyze the following image recognition results in the context of the user's query, and take the user's profile information into account, if there is any information available:
+            - User's health conditions: {healthConditions}
+            - User's diet: {diet}
+            - User's allergies: {allergies}
+            - User's favourite dishes: {favouriteDishes}
+            - User's disliked dishes: {dislikedDishes}.
+        \n\nImage Results:\n---\n{image_result_info}\n---\n\nUser Query: '{user_input}'
         """
         chat_history.append({"role": "user", "content": prompt})
 
@@ -247,7 +253,6 @@ def chat_handler():
     else:
         # Extract food info from user input
         food_list = sort_foods_input(user_input)
-        print("TÄSSÄ ON FOOD_LIST: ", food_list)
 
         if food_list:
 
@@ -280,16 +285,23 @@ def chat_handler():
 
             if nutrition_message:
                 prompt = f"""
-                You are NutriVision, an intelligent and friendly AI assistant that helps users with nutrition analysis and healthy food suggestions.
+                You are NutriVision, an intelligent and friendly AI assistant that helps users with nutrition analysis and personalized healthy food suggestions.
 
                 Your job:
                 1. Use the nutritional data provided below to answer food-related questions clearly and accurately.
-                2. Give short analysis of the nutritional data.
-                3. Give better alternatives if you think the nutritional data is not healthy.
-                4. If no verified data is available for a food item, try to estimate based on your knowledge, but always add this disclaimer:
+                2. If no verified data is available for a food item, try to estimate based on your knowledge, but always add this disclaimer:
                 **DISCLAIMER** Nutritional information not found in the Fineli database. These values might not be correct.
+                3. Always consider the user's profile information in your analysis and recommendations, if the user has provided any information:
+                    - User's health conditions: {healthConditions}
+                    - User's diet: {diet}
+                    - User's allergies: {allergies}
+                    - User's favourite dishes: {favouriteDishes}
+                    - User's disliked dishes: {dislikedDishes}.
+                4. Respond naturally to greetings like "Hi", "Hello", and follow-up inputs like "Yes", "No", "Thanks", or questions like "What should I eat instead?" or "Is this healthy?".
+                5. If the user gives vague input or continues the conversation, assume context from the previous message and guide them.
+                6. Keep responses short, helpful, and friendly. Ask clarifying questions if needed.
 
-                Here is the nutritional data for: {food_list}
+                Here is the nutritional data for: {user_input}
                 ---
                 {nutrition_message}
                 ---
@@ -320,6 +332,12 @@ def chat_handler():
         else:
             prompt = f"""
             Answer to this {user_input} as well as you can. If it is a question try to answer with your knowledge. If it is a greeting or goodbye, answer politely.
+            Also take note the user's profile information in your answer, if it would be suitable for it and the user has provided any information:
+                - User's health conditions: {healthConditions}
+                - User's diet: {diet}
+                - User's allergies: {allergies}
+                - User's favourite dishes: {favouriteDishes}
+                - User's disliked dishes: {dislikedDishes}.
             """
             chat_history.append({"role": "user", "content": prompt})
 
