@@ -95,7 +95,6 @@ def sort_foods_input(user_input):
     response = ollama.chat(
         model="llama3.1", messages=[{"role": "user", "content": prompt}]
     )
-    print("TÄSSÄ ON RESPONSE: ", response)
     sorted_foods = response.get("message", []).get("content","").strip()
 
     potential_foods_comma_split = sorted_foods.split(',')
@@ -247,7 +246,6 @@ def chat_handler():
     else:
         # Extract food info from user input
         food_list = sort_foods_input(user_input)
-        print("TÄSSÄ ON FOOD_LIST: ", food_list)
 
         if food_list:
 
