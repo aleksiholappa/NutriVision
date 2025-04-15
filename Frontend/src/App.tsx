@@ -122,6 +122,4 @@ const App: React.FC = () => {
   );
 };
 
-// TODO: Improve token check. Add token refresh logic.
-
 export default App;
