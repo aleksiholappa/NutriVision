@@ -3,6 +3,7 @@ import './ChatPage.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { APP_VERSION } from '../utils/config';
+import axios from 'axios';
  
 const baseImageUrl = '/imgApi/recognize';
 const baseLLMUrl = '/api/llm';
@@ -21,7 +22,7 @@ const ChatPage: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [dontLoad, setDontLoad] = useState<boolean>(false);
+  const [newChat, setNewChat] = useState<boolean>(false);
   const [inputState, setInputState] = useState<{ 
     message: string; 
     imagePreview: string | null; 
@@ -72,7 +73,7 @@ const ChatPage: React.FC = () => {
   }, [chatInput, imagePreview]);
 
   useEffect(() => {
-    if (localStorage.getItem('token') && !dontLoad) {
+    if (localStorage.getItem('token') && !newChat) {
       const latestChatId: string | null = params['chat-id'] || null;
       console.log('Latest chat ID:', latestChatId);
       loadAllChats();
@@ -80,9 +81,13 @@ const ChatPage: React.FC = () => {
         console.log('Loading chat history for chat ID:', latestChatId);
         loadChatHistory(latestChatId);
       }
-    } else {
-      setDontLoad(false);
     }
+    setNewChat(false);
+    return () => {
+      if (params['chat-id'] !== undefined) {
+        window.location.reload();
+      }
+    };
   }, [params]);
 
   useEffect(() => {
@@ -90,16 +95,15 @@ const ChatPage: React.FC = () => {
   } , []);
 
   const handleUserIcon = async () => {
-    const response = await fetch(userUrl, {
-      method: 'GET',
+    const response = await axios.get(userUrl, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
+      }
     });
-    if (!response.ok) {
+    if (response.status !== 200) {
       throw new Error('Failed to fetch user data');
     }
-    const data = await response.json();
+    const data = response.data;
     const userIcon = data.username.charAt(0).toUpperCase();
     setUserIcon(userIcon);
   }
@@ -116,16 +120,15 @@ const ChatPage: React.FC = () => {
   const loadChatHistory = async (latestChatId: string) => {
     try {
       if (latestChatId) {
-        const response = await fetch(`${baseLLMUrl}/chat_one/${latestChatId}`, {
-          method: 'GET',
+        const response = await axios.get(`${baseLLMUrl}/chat_one/${latestChatId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
           },
         });
-        if (!response.ok) {
+        if (response.status !== 200) {
           throw new Error('Failed to fetch chat history');
         }
-        const data = await response.json();
+        const data = response.data;
         
         console.log("Chat history: ", data);
         const history = data.map((item: any) => {
@@ -164,13 +167,12 @@ const ChatPage: React.FC = () => {
    */
   const loadAllChats = async () => {
     try {
-      const response = await fetch(baseLLMUrl + '/chat_history', {
-        method: 'GET',
+      const response = await axios.get(baseLLMUrl + '/chat_history', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       });
-      const data = await response.json();
+      const data = response.data;
       console.log("All chats: ", data);
       const allChats = data.map((item: any) => ({
         id: item.id,
@@ -217,13 +219,12 @@ const ChatPage: React.FC = () => {
     formData.append('image', image);
 
     try {
-      const response = await fetch(baseImageUrl, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await axios.post(baseImageUrl, formData);
 
-      const data = await response.json();
-      console.log('Image recognition result:', data);
+      const data = response.data;
+      if (response.status !== 200) {
+        throw new Error('Failed to recognize image');
+      }
       return data;
     } catch (error) {
       console.error('Error recognizing image:', error);
@@ -256,19 +257,17 @@ const ChatPage: React.FC = () => {
       if (image) formData.append('image', image);
 
       console.log('➡ Sending message to backend:', userMessage, 'Result:', result, 'Chat ID:', chatId);
-      const response = await fetch(baseLLMUrl + '/chat', {
-        method: 'POST',
+      const response = await axios.post(baseLLMUrl + '/chat', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: formData,
+        }
       });
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error('Failed to fetch LLM response')
       }
 
-      const data = await response.json();
+      const data = response.data;
       let resultInfo = '';
       if (result) {
         try {
@@ -298,7 +297,7 @@ const ChatPage: React.FC = () => {
           }, ...chatHistory
         ]
       );
-    } catch (error) {
+    } catch (error: any) {
       setChatHistory(
         [
           { 
@@ -310,6 +309,7 @@ const ChatPage: React.FC = () => {
           }, ...chatHistory
         ]
       );
+      console.error('Error fetching LLM response:', error);
     }
   }
 
@@ -350,6 +350,7 @@ const ChatPage: React.FC = () => {
     } catch (error) {
       console.error('Error submitting chat:', error);
     } finally {
+      console.log('Chat submission completed');
       setLoading(false);
       setInputState({ message: '', imagePreview: null});
     }
@@ -358,26 +359,27 @@ const ChatPage: React.FC = () => {
   const handleCreateNewChat = async (userMessage: string) => {
     if (!userMessage) userMessage = 'New Chat';
     const newChatId = uuidv4();
-    setDontLoad(true);
+    setNewChat(true);
     setAllChats((prev) => [
       { id: newChatId, name: userMessage },
       ...prev
     ]);
-    const response = await fetch(baseLLMUrl + '/chat_history', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
+    const response = await axios.post(baseLLMUrl + '/chat_history', 
+      JSON.stringify({
         chatId: newChatId,
         chatName: userMessage,
       }),
-    });
-    if (!response.ok) {
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'content-type': 'application/json',
+        },
+      }
+    );
+    if (response.status !== 200) {
       throw new Error('Failed to create new chat');
     }
-    const data = await response.json();
+    const data = response.data;
     console.log('New chat created:', data);
     navigate(`/chat/${newChatId}`, { replace: true });
     return newChatId;
@@ -396,9 +398,11 @@ const ChatPage: React.FC = () => {
         return;
       } else {
         e.preventDefault();
-        document
-          .querySelector('form')
-          ?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        if (!loading) {
+          document
+            .querySelector('form')
+            ?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
       }
     }
   };
@@ -416,20 +420,19 @@ const ChatPage: React.FC = () => {
   }
 
   const handleDeleteChat = async (chatId: string) => {
-    const response = await fetch(baseLLMUrl + '/chat_history', {
-      method: 'DELETE',
+    const response = await axios.delete(baseLLMUrl + '/chat_history', {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({
+      data: JSON.stringify({
         chatId: chatId,
       }),
     });
-    if (!response.ok) {
+    if (response.status !== 200) {
       throw new Error('Failed to delete chat');
     }
-    const data = await response.json();
+    const data = response.data;
     console.log('Chat deleted:', data);
     setAllChats((prev) => prev.filter((chat) => chat.id !== chatId));
     if (params['chat-id'] === chatId) {
@@ -441,18 +444,16 @@ const ChatPage: React.FC = () => {
    * Handle logout button click event
    */
   const handleLogout = async () => {
-    const response = await fetch(logoutUrl, {
-      method: 'POST',
+    const response = await axios.post(logoutUrl, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
     });
-    if (!response.ok) {
+    if (response.status !== 200) {
       throw new Error('Failed to logout');
     }
-    const data = await response.json();
+    const data = response.data;
     localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
     console.log('Logout successful:', data);
     navigate('/login', { replace: true });
   }
@@ -594,7 +595,10 @@ const ChatPage: React.FC = () => {
   );
 };
 
-// TODO: Fix sending messages while the answer is loading bug
 // TODO: Add profile page
+// TODO: Add logic to send abort signal to the backend and the LLM api
+// TODO: Add documentation
+// TODO: Add necessary changes for the production build
+// TODO: Deploy the app
 
 export default ChatPage;

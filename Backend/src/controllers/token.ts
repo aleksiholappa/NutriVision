@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import logger from '../utils/logger';
 
 const tokenRouter = express.Router();
 const SECRET = process.env.REFRESH_TOKEN_SECRET;
@@ -10,7 +11,7 @@ interface CustomRequest extends Request {
   user?: any;
 }
 
-tokenRouter.post('/validate', (req: CustomRequest, res: Response) => {
+tokenRouter.get('/validate', (req: CustomRequest, res: Response) => {
   const user = req.user;
   // Use the middleware UserExtractor to extract the user from the token
   // If the user is not found, it means the token is invalid
@@ -45,7 +46,7 @@ tokenRouter.post('/refresh', (req: Request, res: Response) => {
     res.status(200).json({ token: newAccessToken });
     return;
   } catch (error) {
-    console.error('Error refreshing token:', error);
+    logger.err('Error refreshing token:', error);
     res.status(401).json({ message: 'Invalid or expired refresh token' });
     return; 
   }

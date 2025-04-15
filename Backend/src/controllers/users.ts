@@ -32,7 +32,7 @@ userRouter.get('/', async (req: CustomRequest, res: Response) => {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
-  res.json(user);
+  res.status(200).json(user);
 });
 
 // Update a user by ID

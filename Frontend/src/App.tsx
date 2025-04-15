@@ -23,11 +23,18 @@ const App: React.FC = () => {
     const token = localStorage.getItem('token');
     if (!token) {
       dispatch(logout());
+      setLoading(false);
       return;
     }
 
     try {
-      const response = await axios.post('/api/token/validate', { token });
+      const response = await axios.get('/api/token/validate', 
+        {
+          headers: { 
+            Authorization: `Bearer ${token}` 
+          }
+        }
+      );
       if (response.status === 200) {
         dispatch(validateToken(token));
       } else {
@@ -36,6 +43,8 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Token validation failed:', error);
       dispatch(logout());
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,8 +91,6 @@ const App: React.FC = () => {
         refreshToken();
       }
     }, 1 * 60 * 1000); // Check every 1 minute
-
-    setLoading(false);
 
     return () => clearInterval(interval);
   }, [dispatch]);
