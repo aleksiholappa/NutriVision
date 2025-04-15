@@ -595,6 +595,7 @@ const ChatPage: React.FC = () => {
   );
 };
 
+// TODO: Improve the token refresh logic
 // TODO: Add profile page
 // TODO: Add logic to send abort signal to the backend and the LLM api
 // TODO: Add documentation
