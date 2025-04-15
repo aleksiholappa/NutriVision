@@ -147,12 +147,25 @@ const ChatPage: React.FC = () => {
             file = new File([blob], 'image.png', { type: mimeString });
           }
 
+          let bot_message = "";
+          const image_result = item.image_result;
+          const nutrition_message = item.nutrition_message;
+          const bot_reply = item.bot_message;
+
+          if (image_result) {
+            bot_message = `Recognized food items from the image:\n\n${image_result}\n\n${bot_reply}`;
+          } else if (nutrition_message) {
+            bot_message = `${nutrition_message}\n\n${bot_reply}`;
+          } else {
+            bot_message = bot_reply;
+          }
+
           return {
             user: {
               message: item.user_message,
               image: file,
             },
-            bot: item.nutrition_message + item.bot_message,
+            bot: bot_message.trim(),
           }
       }).reverse();
         setChatHistory(history);
@@ -267,25 +280,9 @@ const ChatPage: React.FC = () => {
         throw new Error('Failed to fetch LLM response')
       }
 
-      const data = response.data;
-      let resultInfo = '';
-      if (result) {
-        try {
-          const foodItems = JSON.parse(result.replace(/'/g, '"'));
-          resultInfo = foodItems.map((item: any) => 
-          `\n${item.name} (confidence: ${item.confidence})\n` +
-          `    Macronutrients for ${item.name} per 100 grams:\n` +
-          `    Energy: ${item.macronutrients.Kilocalories} kcal\n` +
-          `    Protein: ${item.macronutrients.Protein} g\n` +
-          `    Carbohydrates: ${item.macronutrients.Carbohydrates} g\n` +
-          `    Fat: ${item.macronutrients.Fat} g\n`
-          ).join('\n');
-        } catch (error) {
-          console.error('Error parsing image recognition result:', error);
-        }
-      }
-      const botMessage = `${resultInfo ? `Recognized food items from the image: ${resultInfo}\n\n` : ''}${data.nutrition_message}\n\n${data.response}`.trim();
-
+      const data = await response.data;
+      const botMessage = data.response
+      console.log('Bot Message:', botMessage)
       setChatHistory(
         [
           {
