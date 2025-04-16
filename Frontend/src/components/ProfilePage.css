@@ -2,10 +2,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    padding: 3.5rem;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
     border-radius: 16px;
     background-color: rgba(0, 0, 0, 0.05);
+    width: 600px;
+    height: 750px;
+    margin: auto;
+    position: relative;
 }
 
 .ProfilePageContainer h2 {
@@ -16,10 +20,10 @@
 .ProfilePageContainer form {
     display: flex;
     flex-direction: column;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 8px;
     width: 100%;
-    max-width: 400px;
+    max-width: 550px;
 }
 
 .ProfilePageContainer form div {
@@ -30,8 +34,6 @@
     display: block;
     font-size: 1.2rem;
     margin-bottom: 0.5rem;
-    width: 100%;
-    padding-left: 0.3rem;
 }
 
 .ProfilePageContainer form input {
@@ -60,7 +62,6 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.5rem;
-    padding-right: 2rem;
 }
 
 .SaveButton {
@@ -87,6 +88,9 @@
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    position: absolute;
+    bottom: 6rem;
+    left: 2.5rem;
 }
   
 .ExitButton:hover {
@@ -98,7 +102,26 @@
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
+    max-height: 63px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    border-radius: 8px;
+    width: 100%;
 }
+
+.ItemsContainer::-webkit-scrollbar {
+    width: 8px;
+    background-color: transparent;
+  }
+  
+  .ItemsContainer::-webkit-scrollbar-thumb {
+    background-color: #d0d0d033;
+    border-radius: 4px;
+  }
+  
+  .ItemsContainer::-webkit-scrollbar-button {
+    display: none;
+  }
   
 .Item {
     display: inline-flex;
