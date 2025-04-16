@@ -11,6 +11,7 @@ from bson import Binary
 import base64
 import filetype
 from datetime import datetime, timezone
+import csv
 
 import logging
 
@@ -115,6 +116,46 @@ def sort_foods_input(user_input):
     # Return food list with cleaned food items
     food_list = list(processed_foods)
     return food_list
+
+
+def get_recipe_names(input):
+    recipe_names = []
+    with open("allrecipes.csv", "r", encoding="ISO-8859-1") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if input.lower() in row["name"].lower():
+                recipe_names.append(row["name"])
+    return recipe_names
+
+
+def get_recipes_details(names):
+    recipe_details = []
+    with open("allrecipes.csv", "r", encoding="ISO-8859-1") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if row["name"] in names:
+                recipe_details.append({
+                    "name": row["name"],
+                    "ingredients": row["ingredient"],
+                    "process": row["process"]
+                })
+    return recipe_details
+
+
+def filter_recipes(input):
+    prompt = f"""
+    Carefully read the following text and extract only the recipe name explicitly mentioned.
+    Return ONLY the exact recipe name, 
+    or a comma-separated list of the exact recipe names if multiple recipe names are found in the text.
+    If no recipe names are mentioned, return an empty string.
+    Do not add any other items. Do not explain. Do not guess.
+
+    Text: {input}
+    """
+    response = ollama.chat(
+        model="llama3.1", messages=[{"role": "user", "content": prompt}]
+    )
+    return response["message"]["content"].strip()
 
 
 @app.route("/chat", methods=["POST"])
@@ -258,6 +299,58 @@ def chat_handler():
     else:
         # Extract food info from user input
         food_list = sort_foods_input(user_input)
+
+        if "recipe" in user_input.lower():
+            extracted_recipes = filter_recipes(user_input)
+            recipe_names = get_recipe_names(extracted_recipes)
+            if recipe_names:
+                details = get_recipes_details(recipe_names)
+                prompt = f"""
+                You are a recipe assistant. Here are the details of the recipes found for the input "{user_input}":
+
+                {details}
+                
+                Please pick one of the recipes that fit the best for the given input context and 
+                for the user that has submitted the following information about their health and preferences (empty lists can be ignored):
+                    - Health conditions: {healthConditions}
+                    - Diet: {diet}
+                    - Allergies: {allergies}
+                    - Favorite dishes: {favouriteDishes}
+                    - Disliked dishes: {dislikedDishes}
+                Please provide a summary of the selected recipe, including the name (with mentioning it being from AllRecipes), ingredients, 
+                and cooking process and a brief explanation on what possible health benefits could the recipe have for the user.
+                """
+                response = ollama.chat(model="llama3.1", messages=[{"role": "user", "content": prompt}])
+                reply = response["message"]["content"].strip()
+            else:
+                prompt = f"""
+                Answer to the following input as well as you can: "{user_input}". If it is a question try to answer with your knowledge. 
+                If the input contains a request for a recipe, try to provide a recipe that fits the context of the input.
+                Also take note the user's profile information in your answer, if it would be suitable for the context and the user has provided any information:
+                    - User's health conditions: {healthConditions}
+                    - User's diet: {diet}
+                    - User's allergies: {allergies}
+                    - User's favourite dishes: {favouriteDishes}
+                    - User's disliked dishes: {dislikedDishes}.
+                """
+                response = ollama.chat(model="llama3.1", messages=[{"role": "user", "content": prompt}])
+                reply = response["message"]["content"].strip()
+
+            response_for_frontend = reply
+            history_entry['bot_message'] = reply
+            chat_collection.update_one(
+                {"chat_id": chat_id},
+                {
+                    "$push": {
+                        'history' : history_entry
+                    }
+                }
+            )
+            return jsonify(
+                {
+                    "response": response_for_frontend
+                }
+            )
 
         if food_list:
             for food in food_list:
