@@ -19,7 +19,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-
+# Set up Flask app
 app = Flask(__name__)
 CORS(app)
 
@@ -35,8 +35,8 @@ chat_collection = db["chat_history"]
 food_data = pandas.read_csv("foodname_EN.csv", encoding="ISO-8859-1", delimiter=";")
 
 def get_food_id(food_name):
-    # Try to find the best match for a food in Fineli database.
-    # Check for an exact match in the database.
+    # Try to find the best match for a food in Fineli database
+    # Check for an exact match in the database
     exact_match = food_data[food_data["FOODNAME"] == food_name]
     if not exact_match.empty:
         return exact_match.iloc[0]["FOODID"]
@@ -46,7 +46,7 @@ def get_food_id(food_name):
     if not startswith_match.empty:
         return startswith_match.iloc[0]["FOODID"]
 
-    # Check for a match that contains food name in database.
+    # Check for a match that contains food name in database
     contains_match = food_data[food_data["FOODNAME"].str.contains(food_name)]
     if not contains_match.empty:
         return contains_match.iloc[0]["FOODID"]
@@ -55,7 +55,7 @@ def get_food_id(food_name):
 
 
 def get_nutritional_values(food_name):
-    # Get food ID and fetch data from Fineli API.
+    # Get food ID and fetch data from Fineli API
     food_id = get_food_id(food_name)
     if not food_id:
         return f"Food '{food_name}' not found in database."
@@ -69,7 +69,7 @@ def get_nutritional_values(food_name):
 
         if response.status_code == 200:
             data = response.json()
-            # Get the data from Fineli API and sort it out.
+            # Get the data from Fineli API and sort it out
             return {
                 "Calories": data.get("energyKcal", "N/A"),
                 "Protein": data.get("protein", "N/A"),
@@ -82,13 +82,13 @@ def get_nutritional_values(food_name):
 
 
 def sort_foods_input(user_input):
-    # Give prompt for the model to sort out foods from the user input.
+    # Give prompt for the model to sort out foods from the user input
     prompt = f"""
-    Extract a list of distinct food items mentioned in the text below.
-    Return ONLY a comma-separated list of the food items.
-    Example: If input is "I ate apple, banana and apple", return "apple, banana".
+    Carefully read the following text and extract only the food items explicitly mentioned.
+    Return ONLY a comma-separated list of the exact food items found in the text.
+    Ignore words in parentheses unless they are clearly food items.
     If no food items are mentioned, return an empty string.
-    Do not include explanations, apologies, or the word "NONE".
+    Do not add any other items. Do not explain. Do not guess.
 
     Text: "{user_input}"
     """
@@ -97,10 +97,12 @@ def sort_foods_input(user_input):
     )
     sorted_foods = response.get("message", []).get("content","").strip()
 
+    # Separate potential foods by comma
     potential_foods_comma_split = sorted_foods.split(',')
     processed_foods = set()
     food_list = []
 
+    # For each potential food item in potential_food_comma_split, clean the item and make sure there is no '\n' or 'NONE' text
     for item in potential_foods_comma_split:
         cleaned_item = item.strip()
 
@@ -110,12 +112,14 @@ def sort_foods_input(user_input):
         if cleaned_item and cleaned_item.upper() != 'NONE':
             processed_foods.add(cleaned_item)
     
+    # Return food list with cleaned food items
     food_list = list(processed_foods)
     return food_list
 
 
 @app.route("/chat", methods=["POST"])
 def chat_handler():
+    # Get data from payload
     data = request.form.to_dict(flat=True)
     image_data = request.files.to_dict(flat=True)
 
@@ -125,23 +129,27 @@ def chat_handler():
     user_input = data.get("message", "")
     image = image_data.get("image", None)
     image_result = data.get("imageRecognitionResult", None)
+
     healthConditions = data.get("healthConditions", None)
     diet = data.get("diet", None)
     allergies = data.get("allergies", None)
     favouriteDishes = data.get("favouriteDishes", None)
     dislikedDishes = data.get("dislikedDishes", None)
+
     user_id = data.get("userId", None)
     chat_id = data.get("chatId", None)
 
-    if not user_input or not user_id:
+    if not user_id:
         logger.info("Something happens here!")
-        return jsonify({"error": "Missing message or userId"}), 400
+        return jsonify({"error": "Missing userId!"}), 400
 
+    # Set up variables to save chat_history to MongoDB and send response for frontend
     image_result_info = ""
     nutrition_message = ""
     reply = ""
     response_for_frontend = ""
 
+    # Convert image as Binary
     image_binary = None
     if image:
         image_bytes = image.read()
@@ -155,7 +163,7 @@ def chat_handler():
         image_result,
     )
 
-    # Prepare base history entry for saving
+    # Prepare base history entry for saving data to MongoDB
     history_entry = {
         'user_message': user_input,
         'image': image_binary,
@@ -199,21 +207,24 @@ def chat_handler():
         except Exception as e:
             logger.error("Error processing image recognition result: ", e)
 
-    # Fetch chat history from database
+    # Fetch chat history from MongoDB
     history_from_db = list(
-        chat_collection.find({"chat_id": chat_id}).sort("_id", -1).limit(10)
+        chat_collection.find({"chat_id": chat_id}, {'history': {'$slice': -10}})  #Limit to 10 chats  
     )
-    logger.info("History from DB: %s", history_from_db)
+    #logger.info("History from DB: %s", history_from_db)
 
-    # Handle the chat history for the model
-    if history_from_db:
-        chat_history = [
+    # Generate the base chat_history with base instructions for the model
+    chat_history = [
             {
                 "role": "system",
                 "content": "You are a helpful nutrition assistant. Analyze given nutritional information, but do not add any values, and give short feedback of the nutritional values and give better and healthier options.",
             }
         ]
-        for item in history_from_db:
+
+    # Handle previous chat history fetched from MongoDB
+    if history_from_db and 'history' in history_from_db[0]:
+        previous_history_items = history_from_db[0]['history']  #Access the history array
+        for item in previous_history_items:
             if item.get("user_message"):
                 chat_history.append({"role": "user", "content": item["user_message"]})
             if item.get("bot_message"):
@@ -221,19 +232,11 @@ def chat_handler():
                     {"role": "assistant", "content": item["bot_message"]}
                 )
 
-    else:
-        chat_history = [
-            {
-                "role": "system",
-                "content": "You are a helpful nutrition assistant. Analyze given nutritional information, but do not add any values, and give short feedback of the nutritional values and give better and healthier options.",
-            }
-        ]
+    #chat_history.append({"role": "user", "content": user_input})
 
-    chat_history.append({"role": "user", "content": user_input})
-
-    model = "llama3.1"
-
+    # Handle a case where user loads image and image recognition result is available
     if image_result_info:
+        logger.info("Image recognition values detected")
         prompt = f"""
         Analyze the following image recognition results in the context of the user's query, and take the user's profile information into account, if there is any information available:
             - User's health conditions: {healthConditions}
@@ -243,24 +246,25 @@ def chat_handler():
             - User's disliked dishes: {dislikedDishes}.
         \n\nImage Results:\n---\n{image_result_info}\n---\n\nUser Query: '{user_input}'
         """
+        # Append nutritional information to the chat history for the assistant to process
         chat_history.append({"role": "user", "content": prompt})
 
-        response = ollama.chat(model=model, messages=chat_history)
+        # Generate response
+        response = ollama.chat(model="llama3.1", messages=chat_history)
         reply = response["message"]["content"].strip()
         response_for_frontend = f"Recognized food items from the image:\n\n{image_result_info}\n\n{reply}"
 
-    
+    # If no image detected, treat as a text with food items
     else:
         # Extract food info from user input
         food_list = sort_foods_input(user_input)
 
         if food_list:
-
             for food in food_list:
                 # Get nutrition data from Fineli API
                 nutrition_info = get_nutritional_values(food.upper())
 
-                # Make sure that nutrition_info is dictionary. Give custom prompt if that is the case.
+                # Make sure that nutrition_info is dictionary. Give custom prompt if that is the case
                 if isinstance(nutrition_info, dict):
                     # If food ID found, format the nutritional info and ask the model to analyze
                     temporary_message = f"\nHere is the nutritional analysis per 100g from Fineli for {food.lower()}:\n"
@@ -277,13 +281,15 @@ def chat_handler():
                     nutrition_message += temporary_message
                     history_entry['nutrition_message'] = nutrition_message
                 
+                # If no food items in food_list, add empty string to history_entry
                 else:
-                    nutrition_message += "EMPTY"
+                    nutrition_message = ""
                     history_entry['nutrition_message'] = nutrition_message
 
             
-
+            # If nutrition_message contains nutritional data, give data for model to analyze
             if nutrition_message:
+                logger.info("Nutritional values detected")
                 prompt = f"""
                 You are NutriVision, an intelligent and friendly AI assistant that helps users with nutrition analysis and personalized healthy food suggestions.
 
@@ -313,44 +319,43 @@ def chat_handler():
                 chat_history.append({"role": "user", "content": prompt})
 
                 # Generate response
-                response = ollama.chat(model=model, messages=chat_history)
+                response = ollama.chat(model="llama3.1", messages=chat_history)
                 reply = response["message"]["content"].strip()
-                if nutrition_message != "EMPTY":
-                    response_for_frontend = f"{nutrition_message}\n\n{reply}"
-                else:
-                    response_for_frontend = reply
+                response_for_frontend = f"{nutrition_message}\n\n{reply}"
             
+            # If no image or foods detected, treat the user_input as a normal query
             else:
-                logger.info("No data from Fineli, treating message as a general query")
-                food_list = []
+                logger.info("No image or foods detected -> treating as a normal query")
+                prompt = f"""
+                Answer to this {user_input} as well as you can. If it is a question try to answer with your knowledge.
+                Respond naturally to greetings like "Hi", "Hello", and follow-up inputs like "Yes", "No", "Thanks", or questions like "What should I eat instead?" or "Is this healthy?".
+                Also take note the user's profile information in your answer, if it would be suitable for it and the user has provided any information:
+                    - User's health conditions: {healthConditions}
+                    - User's diet: {diet}
+                    - User's allergies: {allergies}
+                    - User's favourite dishes: {favouriteDishes}
+                    - User's disliked dishes: {dislikedDishes}.
+                """
+
+                # Append nutritional information to the chat history for the assistant to process
+                chat_history.append({"role": "user", "content": prompt})
+
+                # Generate response
+                response = ollama.chat(model="llama3.1", messages=chat_history)
+                reply = response["message"]["content"].strip()
+                response_for_frontend = reply
 
             logger.info("User Message: %s", user_input)
             logger.info("Nutrition message: %s", nutrition_message)
             logger.info("Reply: %s", reply)
 
-            
-        else:
-            prompt = f"""
-            Answer to this {user_input} as well as you can. If it is a question try to answer with your knowledge. If it is a greeting or goodbye, answer politely.
-            Also take note the user's profile information in your answer, if it would be suitable for it and the user has provided any information:
-                - User's health conditions: {healthConditions}
-                - User's diet: {diet}
-                - User's allergies: {allergies}
-                - User's favourite dishes: {favouriteDishes}
-                - User's disliked dishes: {dislikedDishes}.
-            """
-            chat_history.append({"role": "user", "content": prompt})
-
-            # Generate response
-            response = ollama.chat(model=model, messages=chat_history)
-            reply = response["message"]["content"].strip()
-            response_for_frontend = reply
-
-        logger.info("User Message: %s", user_input)
-        logger.info("Reply: %s", reply)
-        
+    logger.info("User Message: %s", user_input)
+    logger.info("Reply: %s", reply)
+    
+    # Add reply to history_entry
     history_entry['bot_message'] = reply
 
+    # Update MongoDB history
     chat_collection.update_one(
         {"chat_id": chat_id},
         {
@@ -360,6 +365,7 @@ def chat_handler():
         }
     )
 
+    # Send response for frontend
     return jsonify(
         {
             "response": response_for_frontend
