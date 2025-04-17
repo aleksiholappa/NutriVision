@@ -4,26 +4,11 @@ import jwt from 'jsonwebtoken';
 import logger from '../utils/logger';
 
 const tokenRouter = express.Router();
-const SECRET = process.env.REFRESH_TOKEN_SECRET;
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+const SECRET = process.env.SECRET;
 
-interface CustomRequest extends Request {
-  token?: string | null;
-  user?: any;
-}
-
-tokenRouter.get('/validate', (req: CustomRequest, res: Response) => {
-  const user = req.user;
-  // Use the middleware UserExtractor to extract the user from the token
-  // If the user is not found, it means the token is invalid
-  if (!user) {
-    res.status(400).json({ error: 'Invalid token' });
-  } else {
-    res.status(200).json({ message: 'Token is valid'});
-  }
-});
-
-tokenRouter.post('/refresh', (req: Request, res: Response) => {
-  const { refreshToken } = req.cookies.refresgToken;
+tokenRouter.get('/refresh', (req: Request, res: Response) => {
+  const refreshToken = req.cookies.refreshToken;
 
   if (!refreshToken) {
     res.status(400).json({ message: 'Refresh token is required' });
@@ -31,14 +16,16 @@ tokenRouter.post('/refresh', (req: Request, res: Response) => {
   }
 
   try {
-    if (!SECRET) {
-      res.status(500).json({ message: 'Server configuration error: SECRET is not defined' });
+    if (!REFRESH_TOKEN_SECRET || !SECRET) {
+      res.status(500).json(
+        { message: 'Server configuration error: secrets not defined correctly.' }
+      );
       return;
     }
-    const decoded = jwt.verify(refreshToken, SECRET) as jwt.JwtPayload;
+    const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as jwt.JwtPayload;
 
     const newAccessToken = jwt.sign(
-      { id: decoded.userId, email: decoded.email },
+      { id: decoded.id, email: decoded.email },
       SECRET,
       { expiresIn: '1h' }
     );

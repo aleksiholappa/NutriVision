@@ -16,62 +16,31 @@ import { jwtDecode } from 'jwt-decode';
 
 const App: React.FC = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const token = useSelector((state: RootState) => state.auth.token);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
 
-  const validate = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      dispatch(logout());
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await axios.get('/api/token/validate', 
-        {
-          headers: { 
-            Authorization: `Bearer ${token}` 
-          }
-        }
-      );
-      if (response.status === 200) {
-        dispatch(validateToken(token));
-      } else {
-        dispatch(logout());
-      }
-    } catch (error) {
-      console.error('Token validation failed:', error);
-      dispatch(logout());
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const refreshToken = async () => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      dispatch(logout());
-      return;
-    }
-  
     try {
-      const response = await axios.post('/api/token/refresh', {}, { withCredentials: true });
+      const response = await axios.get('/api/token/refresh', { withCredentials: true });
       if (response.status === 200) {
         const { token } = response.data;
-        localStorage.setItem('token', token);
-        dispatch(validateToken(token)); // Update Redux state
+        dispatch(validateToken(token));
+        console.log('Token refreshed successfully');
       } else {
         dispatch(logout());
       }
     } catch (error) {
       console.error('Token refresh failed:', error);
       dispatch(logout());
+    } finally {
+      setLoading(false);
     }
   };
 
-  const isTokenExpiringSoon = (token: string): boolean => {
+  const isTokenExpiringSoon = (token: string | null): boolean => {
     try {
+      if (!token) return true;
       const decoded: { exp: number } = jwtDecode(token);
       const currentTime = Math.floor(Date.now() / 1000);
       const timeLeft = decoded.exp - currentTime;
@@ -83,11 +52,11 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    validate();
+    refreshToken();
 
     const interval = setInterval(() => {
-      const currentToken = localStorage.getItem('token');
-      if (currentToken && isTokenExpiringSoon(currentToken)) {
+      if (isTokenExpiringSoon(token)) {
+        console.log('Token is expiring soon, refreshing...');
         refreshToken();
       }
     }, 1 * 60 * 1000); // Check every 1 minute

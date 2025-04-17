@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios';
 import './ProfilePage.css';
+import { RootState } from './Store';
+import { useSelector } from 'react-redux';
 
 const baseUrl = '/api/profile'
 
@@ -17,13 +19,14 @@ const ProfilePage: React.FC = () => {
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');  
+  const token = useSelector((state: RootState) => state.auth.token);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const response = await axios.get(baseUrl, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
           },
         });
         const { healthConditions, diet, allergies, favoriteDishes, dislikedDishes } = response.data;
@@ -91,7 +94,7 @@ const ProfilePage: React.FC = () => {
         dislikedDishes,
       }, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
       setSuccess('Profile updated');

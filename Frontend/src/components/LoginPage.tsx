@@ -25,7 +25,6 @@ const LoginPage: React.FC = () => {
       );
       setSuccess('Login successful!');
       setError('');
-      localStorage.setItem('token', response.data.token);
       dispatch(login(response.data.token));
       navigate('/chat');
     } catch (error: any) {

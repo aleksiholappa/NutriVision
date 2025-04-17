@@ -4,6 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { APP_VERSION } from '../utils/config';
 import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from './Store';
+import { logout } from './authSlice';
  
 const baseImageUrl = '/imgApi/recognize';
 const baseLLMUrl = '/api/llm';
@@ -33,6 +36,8 @@ const ChatPage: React.FC = () => {
   const [allChats, setAllChats] = useState<{ id: string; name: string }[]>([]);
   const [openUserMenu, setOpenUserMenu] = useState<boolean>(false);
   const [userIcon, setUserIcon] = useState<string>('U');
+  const token = useSelector((state: RootState) => state.auth.token);
+  const dispatch = useDispatch();
 
   /**
    * Handle resizing of the chat input and chat history container
@@ -73,7 +78,7 @@ const ChatPage: React.FC = () => {
   }, [chatInput, imagePreview]);
 
   useEffect(() => {
-    if (localStorage.getItem('token') && !newChat) {
+    if (token && !newChat) {
       const latestChatId: string | null = params['chat-id'] || null;
       console.log('Latest chat ID:', latestChatId);
       loadAllChats();
@@ -97,7 +102,7 @@ const ChatPage: React.FC = () => {
   const handleUserIcon = async () => {
     const response = await axios.get(userUrl, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
       }
     });
     if (response.status !== 200) {
@@ -122,7 +127,7 @@ const ChatPage: React.FC = () => {
       if (latestChatId) {
         const response = await axios.get(`${baseLLMUrl}/chat_one/${latestChatId}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
           },
         });
         if (response.status !== 200) {
@@ -182,7 +187,7 @@ const ChatPage: React.FC = () => {
     try {
       const response = await axios.get(baseLLMUrl + '/chat_history', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
       const data = response.data;
@@ -272,7 +277,7 @@ const ChatPage: React.FC = () => {
       console.log('➡ Sending message to backend:', userMessage, 'Result:', result, 'Chat ID:', chatId);
       const response = await axios.post(baseLLMUrl + '/chat', formData, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         }
       });
 
@@ -368,7 +373,7 @@ const ChatPage: React.FC = () => {
       }),
       {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'content-type': 'application/json',
         },
       }
@@ -419,7 +424,7 @@ const ChatPage: React.FC = () => {
   const handleDeleteChat = async (chatId: string) => {
     const response = await axios.delete(baseLLMUrl + '/chat_history', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
         'content-type': 'application/json',
       },
       data: JSON.stringify({
@@ -443,14 +448,14 @@ const ChatPage: React.FC = () => {
   const handleLogout = async () => {
     const response = await axios.post(logoutUrl, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
     if (response.status !== 200) {
       throw new Error('Failed to logout');
     }
     const data = response.data;
-    localStorage.removeItem('token');
+    dispatch(logout());
     console.log('Logout successful:', data);
     navigate('/login', { replace: true });
   }

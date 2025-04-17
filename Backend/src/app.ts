@@ -7,6 +7,7 @@ import loginRouter from './controllers/login';
 import llmRouter from './controllers/llm';
 import profileRouter from './controllers/profile';
 import tokenRouter from './controllers/token';
+import cookieParser from 'cookie-parser';
 import { 
   requestLogger, 
   unknownEndpoint, 
@@ -34,6 +35,7 @@ app.use(cors());
 app.use(express.static('dist'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(cookieParser());
 app.use(requestLogger);
 app.use(userExtractor);
 app.use(isTokenBlacklisted);
