@@ -30,9 +30,6 @@ client = MongoClient(mongo_uri)
 db = client["NutriVision"]
 chat_collection = db["chat_history"]
 
-# Make sure chats are deleted after 30 days
-chat_collection.create_index("createdAt", expireAfterSeconds=60*60*24*30)
-
 food_data = pandas.read_csv("foodname_EN.csv", encoding="ISO-8859-1", delimiter=";")
 
 def get_food_id(food_name):
