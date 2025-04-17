@@ -2,7 +2,6 @@ import { Router, Request, Response, NextFunction } from 'express';
 import User from '../models/User';
 
 interface CustomRequest extends Request {
-    token?: string | null;
     user?: any;
   }
 

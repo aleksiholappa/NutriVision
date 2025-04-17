@@ -5,7 +5,6 @@ import User from '../models/User';
 import { TOKENBLACKLIST } from './config';
 
 interface CustomRequest extends Request {
-  token?: string | null;
   user?: any;
 }
 
@@ -64,6 +63,7 @@ const userExtractor = async (request: CustomRequest, response: Response, next: N
 
 const isTokenBlacklisted = (req: Request, res: Response, next: NextFunction): void => {
   const token = req.headers.authorization?.split(' ')[1];
+  const refreshToken = req.cookies.refreshToken;
 
   if (token) {
     // Remove expired tokens from the blacklist
@@ -77,6 +77,21 @@ const isTokenBlacklisted = (req: Request, res: Response, next: NextFunction): vo
     // Check if the token is blacklisted
     if (TOKENBLACKLIST.has(token)) {
       res.status(401).json({ error: 'Token is invalid or blacklisted' });
+      return;
+    }
+  }
+
+  if (refreshToken) {
+    // Remove expired refresh tokens from the blacklist
+    const currentTime = Date.now();
+    for (const [blacklistedToken, expirationTime] of TOKENBLACKLIST.entries()) {
+      if (expirationTime <= currentTime) {
+        TOKENBLACKLIST.delete(blacklistedToken);
+      }
+    }
+    // Check if the refresh token is blacklisted
+    if (TOKENBLACKLIST.has(refreshToken)) {
+      res.status(401).json({ error: 'Refresh token is invalid or blacklisted' });
       return;
     }
   }

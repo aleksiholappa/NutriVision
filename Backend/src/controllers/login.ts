@@ -3,9 +3,13 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import User from '../models/User';
 import logger from '../utils/logger';
-import { TOKENBLACKLIST, TOKENEXPIRATIONTIME } from '../utils/config';
+import { TOKENBLACKLIST, TOKEN_EXP, REFRESH_TOKEN_EXP } from '../utils/config';
 
 const loginRouter = Router();
+
+interface CustomRequest extends Request {
+  user?: any;
+}
 
 const login: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   const { emailOrUsername, password } = req.body;
@@ -41,23 +45,27 @@ const login: RequestHandler = async (req: Request, res: Response): Promise<void>
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000, 
+    maxAge: REFRESH_TOKEN_EXP,
   });
   
-  res.status(200).json({ token: token, userId: user._id, email: user.email, username: user.username });
+  res.status(200).json({ token });
 };
 
-const logout: RequestHandler = (req: Request, res: Response): void => {
+const logout: RequestHandler = (req: CustomRequest, res: Response): void => {
+  logger.info('Logging out user');
   const authorization = req.get('Authorization');
-  if (authorization && authorization.startsWith('Bearer ')) {
-    const token = authorization.replace('Bearer ', '');
-    const expirationTime = Date.now() + TOKENEXPIRATIONTIME;
-    TOKENBLACKLIST.set(token, expirationTime);
-    res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'strict' });
-    res.status(200).json({ message: 'Logged out successfully' });
-  } else {
+  if (!authorization) {
     res.status(400).json({ error: 'Token is missing' });
+    return;
   }
+  const token = authorization.replace('Bearer ', '');
+  const refreshToken = req.cookies.refreshToken;
+  const tokenExpTime = Date.now() + TOKEN_EXP;
+  const refreshTokenExpTime = Date.now() + REFRESH_TOKEN_EXP;
+  TOKENBLACKLIST.set(token, tokenExpTime);
+  TOKENBLACKLIST.set(refreshToken, refreshTokenExpTime);
+  res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'strict' });
+  res.status(200).json({ message: 'Logged out successfully' });
 };
 
 loginRouter.post('/', login);

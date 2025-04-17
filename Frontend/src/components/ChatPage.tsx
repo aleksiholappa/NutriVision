@@ -4,8 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { APP_VERSION } from '../utils/config';
 import axios from 'axios';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from './Store';
+import { useDispatch } from 'react-redux';
 import { logout } from './authSlice';
  
 const baseImageUrl = '/imgApi/recognize';
@@ -36,7 +35,6 @@ const ChatPage: React.FC = () => {
   const [allChats, setAllChats] = useState<{ id: string; name: string }[]>([]);
   const [openUserMenu, setOpenUserMenu] = useState<boolean>(false);
   const [userIcon, setUserIcon] = useState<string>('U');
-  const token = useSelector((state: RootState) => state.auth.token);
   const dispatch = useDispatch();
 
   /**
@@ -78,7 +76,7 @@ const ChatPage: React.FC = () => {
   }, [chatInput, imagePreview]);
 
   useEffect(() => {
-    if (token && !newChat) {
+    if (localStorage.getItem('token') && !newChat) {
       const latestChatId: string | null = params['chat-id'] || null;
       console.log('Latest chat ID:', latestChatId);
       loadAllChats();
@@ -102,7 +100,7 @@ const ChatPage: React.FC = () => {
   const handleUserIcon = async () => {
     const response = await axios.get(userUrl, {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
       }
     });
     if (response.status !== 200) {
@@ -127,7 +125,7 @@ const ChatPage: React.FC = () => {
       if (latestChatId) {
         const response = await axios.get(`${baseLLMUrl}/chat_one/${latestChatId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
           },
         });
         if (response.status !== 200) {
@@ -187,7 +185,7 @@ const ChatPage: React.FC = () => {
     try {
       const response = await axios.get(baseLLMUrl + '/chat_history', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       });
       const data = response.data;
@@ -277,7 +275,7 @@ const ChatPage: React.FC = () => {
       console.log('➡ Sending message to backend:', userMessage, 'Result:', result, 'Chat ID:', chatId);
       const response = await axios.post(baseLLMUrl + '/chat', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         }
       });
 
@@ -373,7 +371,7 @@ const ChatPage: React.FC = () => {
       }),
       {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'content-type': 'application/json',
         },
       }
@@ -424,7 +422,7 @@ const ChatPage: React.FC = () => {
   const handleDeleteChat = async (chatId: string) => {
     const response = await axios.delete(baseLLMUrl + '/chat_history', {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'content-type': 'application/json',
       },
       data: JSON.stringify({
@@ -446,15 +444,17 @@ const ChatPage: React.FC = () => {
    * Handle logout button click event
    */
   const handleLogout = async () => {
-    const response = await axios.post(logoutUrl, {
+    const response = await axios.post(logoutUrl, {}, {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
+      withCredentials: true,
     });
     if (response.status !== 200) {
       throw new Error('Failed to logout');
     }
     const data = response.data;
+    localStorage.removeItem('token');
     dispatch(logout());
     console.log('Logout successful:', data);
     navigate('/login', { replace: true });
@@ -597,7 +597,6 @@ const ChatPage: React.FC = () => {
   );
 };
 
-// TODO: Improve the token refresh logic
 // TODO: Add profile page
 // TODO: Add logic to send abort signal to the backend and the LLM api
 // TODO: Add documentation

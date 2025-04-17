@@ -1,17 +1,16 @@
-import { Request, Response } from 'express';
-import express from 'express';
+import { Request, Response, Router } from 'express';
 import jwt from 'jsonwebtoken';
 import logger from '../utils/logger';
 
-const tokenRouter = express.Router();
+const tokenRouter = Router();
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
 const SECRET = process.env.SECRET;
 
 tokenRouter.get('/refresh', (req: Request, res: Response) => {
-  const refreshToken = req.cookies.refreshToken;
+  const refreshToken = req.cookies.refreshToken || null;
 
   if (!refreshToken) {
-    res.status(400).json({ message: 'Refresh token is required' });
+    res.status(400).json({ error: 'Refresh token missing' });
     return;
   }
 
@@ -34,7 +33,7 @@ tokenRouter.get('/refresh', (req: Request, res: Response) => {
     return;
   } catch (error) {
     logger.err('Error refreshing token:', error);
-    res.status(401).json({ message: 'Invalid or expired refresh token' });
+    res.status(401).json({ error: 'Invalid or expired refresh token' });
     return; 
   }
 });

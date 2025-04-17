@@ -10,7 +10,6 @@ const baseUrl = LLM_API_URL;
 const upload = multer({ storage: multer.memoryStorage() });
 
 interface CustomRequest extends Request {
-  token?: string | null;
   user?: any;
 }
 

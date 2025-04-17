@@ -23,9 +23,13 @@ const LoginPage: React.FC = () => {
         { emailOrUsername,password }, 
         { withCredentials: true }
       );
+      if (response.status !== 200) {
+        throw new Error('Login failed');
+      }
       setSuccess('Login successful!');
       setError('');
-      dispatch(login(response.data.token));
+      localStorage.setItem('token', response.data.token);
+      dispatch(login());
       navigate('/chat');
     } catch (error: any) {
       console.error(error.response.data.error);

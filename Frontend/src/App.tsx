@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LoginPage from './components/LoginPage';
 import RegistrationPage from './components/RegistrationPage';
@@ -9,30 +9,28 @@ import ChatPage from './components/ChatPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './components/Store';
-import { validateToken, logout } from './components/authSlice';
+import { logout, login } from './components/authSlice';
 import './App.css';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
 const App: React.FC = () => {
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
-  const token = useSelector((state: RootState) => state.auth.token);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
 
-  const refreshToken = async () => {
+  const refreshToken = async (): Promise<string | null> => {
     try {
       const response = await axios.get('/api/token/refresh', { withCredentials: true });
-      if (response.status === 200) {
-        const { token } = response.data;
-        dispatch(validateToken(token));
-        console.log('Token refreshed successfully');
-      } else {
-        dispatch(logout());
-      }
-    } catch (error) {
-      console.error('Token refresh failed:', error);
+      console.log('Token refreshed successfully');
+      const newToken = response.data.token;
+      dispatch(login());
+      localStorage.setItem('token', newToken);
+      return newToken;
+    } catch (error: any) {
+      console.log("Couldn't refresh access token", error.response.data.error);
       dispatch(logout());
+      return null;
     } finally {
       setLoading(false);
     }
@@ -40,33 +38,38 @@ const App: React.FC = () => {
 
   const isTokenExpiringSoon = (token: string | null): boolean => {
     try {
-      if (!token) return true;
+      if (!token) {
+        return false;
+      }
       const decoded: { exp: number } = jwtDecode(token);
       const currentTime = Math.floor(Date.now() / 1000);
       const timeLeft = decoded.exp - currentTime;
       return timeLeft < 5 * 60; // Refresh if less than 5 minutes left
     } catch (error) {
       console.error('Error decoding token:', error);
-      return true;
+      return false;
     }
   };
 
   useEffect(() => {
-    refreshToken();
+    let token: string | null;
+    (async () => {
+      token = await refreshToken();
+    })();
 
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       if (isTokenExpiringSoon(token)) {
         console.log('Token is expiring soon, refreshing...');
-        refreshToken();
+        token = await refreshToken();
       }
     }, 1 * 60 * 1000); // Check every 1 minute
 
     return () => clearInterval(interval);
-  }, [dispatch]);
+  }, []);
 
   if (loading) {
     return <div>Loading...</div>;
-  }
+  }  
 
   return (
     <Router>
