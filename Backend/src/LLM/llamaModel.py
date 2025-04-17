@@ -31,7 +31,7 @@ db = client["NutriVision"]
 chat_collection = db["chat_history"]
 
 # Make sure chats are deleted after 30 days
-# chat_collection.create_index("createdAt", expireAfterSeconds=60*60*24*30)
+chat_collection.create_index("createdAt", expireAfterSeconds=60*60*24*30)
 
 food_data = pandas.read_csv("foodname_EN.csv", encoding="ISO-8859-1", delimiter=";")
 
@@ -212,6 +212,32 @@ def chat_handler():
         'nutrition_message': "",
         'bot_message': ""
     }
+
+    # Fetch chat history from MongoDB
+    history_from_db = list(
+        chat_collection.find({"chat_id": chat_id}, {'history': {'$slice': -10}})  #Limit to 10 chats  
+    )
+    #logger.info("History from DB: %s", history_from_db)
+
+    # Generate the base chat_history with base instructions for the model
+    chat_history = [
+            {
+                "role": "system",
+                "content": "You are a helpful nutrition assistant. Analyze given nutritional information, but do not add any values, and give short feedback of the nutritional values and give better and healthier options.",
+            }
+        ]
+
+    # Handle previous chat history fetched from MongoDB
+    if history_from_db and 'history' in history_from_db[0]:
+        previous_history_items = history_from_db[0]['history']  #Access the history array
+        for item in previous_history_items:
+            if item.get("user_message"):
+                chat_history.append({"role": "user", "content": item["user_message"]})
+            if item.get("bot_message"):
+                chat_history.append(
+                    {"role": "assistant", "content": item["bot_message"]}
+                )
+                
     # Process image recognition result
     if image_result:
         try:
@@ -248,33 +274,6 @@ def chat_handler():
         except Exception as e:
             logger.error("Error processing image recognition result: ", e)
 
-    # Fetch chat history from MongoDB
-    history_from_db = list(
-        chat_collection.find({"chat_id": chat_id}, {'history': {'$slice': -10}})  #Limit to 10 chats  
-    )
-    #logger.info("History from DB: %s", history_from_db)
-
-    # Generate the base chat_history with base instructions for the model
-    chat_history = [
-            {
-                "role": "system",
-                "content": "You are a helpful nutrition assistant. Analyze given nutritional information, but do not add any values, and give short feedback of the nutritional values and give better and healthier options.",
-            }
-        ]
-
-    # Handle previous chat history fetched from MongoDB
-    if history_from_db and 'history' in history_from_db[0]:
-        previous_history_items = history_from_db[0]['history']  #Access the history array
-        for item in previous_history_items:
-            if item.get("user_message"):
-                chat_history.append({"role": "user", "content": item["user_message"]})
-            if item.get("bot_message"):
-                chat_history.append(
-                    {"role": "assistant", "content": item["bot_message"]}
-                )
-
-    #chat_history.append({"role": "user", "content": user_input})
-
     # Handle a case where user loads image and image recognition result is available
     if image_result_info:
         logger.info("Image recognition values detected")
@@ -301,6 +300,7 @@ def chat_handler():
         food_list = sort_foods_input(user_input)
 
         if "recipe" in user_input.lower():
+            logger.info("Recipe request detected, trying to find a recipe")
             extracted_recipes = filter_recipes(user_input)
             recipe_names = get_recipe_names(extracted_recipes)
             if recipe_names:
@@ -323,6 +323,7 @@ def chat_handler():
                 response = ollama.chat(model="llama3.1", messages=[{"role": "user", "content": prompt}])
                 reply = response["message"]["content"].strip()
             else:
+                logger.info("Recipe request detected, but no recipes found from data, trying to generate a recipe")
                 prompt = f"""
                 Answer to the following input as well as you can: "{user_input}". If it is a question try to answer with your knowledge. 
                 If the input contains a request for a recipe, try to provide a recipe that fits the context of the input.
@@ -338,21 +339,8 @@ def chat_handler():
 
             response_for_frontend = reply
             history_entry['bot_message'] = reply
-            chat_collection.update_one(
-                {"chat_id": chat_id},
-                {
-                    "$push": {
-                        'history' : history_entry
-                    }
-                }
-            )
-            return jsonify(
-                {
-                    "response": response_for_frontend
-                }
-            )
 
-        if food_list:
+        if food_list and "recipe" not in user_input.lower():
             for food in food_list:
                 # Get nutrition data from Fineli API
                 nutrition_info = get_nutritional_values(food.upper())
