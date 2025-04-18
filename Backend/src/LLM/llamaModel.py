@@ -84,6 +84,7 @@ def sort_foods_input(user_input):
     prompt = f"""
     Carefully read the following text and extract only the food items explicitly mentioned.
     Return ONLY a comma-separated list of the exact food items found in the text.
+    If a food is in plural, try to return it as singluar.
     Ignore words in parentheses unless they are clearly food items.
     If no food items are mentioned, return an empty string.
     Do not add any other items. Do not explain. Do not guess.
@@ -112,6 +113,7 @@ def sort_foods_input(user_input):
     
     # Return food list with cleaned food items
     food_list = list(processed_foods)
+    logger.info(f"FOOD_LIST: {food_list}")
     return food_list
 
 
@@ -338,31 +340,40 @@ def chat_handler():
             history_entry['bot_message'] = reply
 
         if food_list and "recipe" not in user_input.lower():
+            # Define items that should be ignored as a food
+            ignore_list = {"breakfast", "dinner", "snack", "meal", "fruit", "vegetable"}
             for food in food_list:
-                # Get nutrition data from Fineli API
-                nutrition_info = get_nutritional_values(food.upper())
-
-                # Make sure that nutrition_info is dictionary. Give custom prompt if that is the case
-                if isinstance(nutrition_info, dict):
-                    # If food ID found, format the nutritional info and ask the model to analyze
-                    temporary_message = f"\nHere is the nutritional analysis per 100g from Fineli for {food.lower()}:\n"
-                    temporary_message += (
-                        f"Calories: {nutrition_info['Calories']:.3f} kcal\n"
-                    )
-                    temporary_message += f"Protein: {nutrition_info['Protein']:.3f} g\n"
-                    temporary_message += f"Fat: {nutrition_info['Fat']:.3f} g\n"
-                    temporary_message += (
-                        f"Carbohydrates: {nutrition_info['Carbohydrates']:.3f} g\n"
-                    )
-                    temporary_message += f"Fiber: {nutrition_info['Fiber']:.3f} g\n"
-
-                    nutrition_message += temporary_message
-                    history_entry['nutrition_message'] = nutrition_message
                 
-                # If no food items in food_list, add empty string to history_entry
-                else:
+                # Check if food item is in ignore list
+                if food in ignore_list:
                     nutrition_message = ""
                     history_entry['nutrition_message'] = nutrition_message
+                
+                else:
+                    # Get nutrition data from Fineli API
+                    nutrition_info = get_nutritional_values(food.upper())
+
+                    # Make sure that nutrition_info is dictionary. Give custom prompt if that is the case
+                    if isinstance(nutrition_info, dict):
+                        # If food ID found, format the nutritional info and ask the model to analyze
+                        temporary_message = f"\nHere is the nutritional analysis per 100g from Fineli for {food.lower()}:\n"
+                        temporary_message += (
+                            f"Calories: {nutrition_info['Calories']:.3f} kcal\n"
+                        )
+                        temporary_message += f"Protein: {nutrition_info['Protein']:.3f} g\n"
+                        temporary_message += f"Fat: {nutrition_info['Fat']:.3f} g\n"
+                        temporary_message += (
+                            f"Carbohydrates: {nutrition_info['Carbohydrates']:.3f} g\n"
+                        )
+                        temporary_message += f"Fiber: {nutrition_info['Fiber']:.3f} g\n"
+
+                        nutrition_message += temporary_message
+                        history_entry['nutrition_message'] = nutrition_message
+                    
+                    # If no food items in food_list, add empty string to history_entry
+                    else:
+                        nutrition_message = ""
+                        history_entry['nutrition_message'] = nutrition_message
 
             
             # If nutrition_message contains nutritional data, give data for model to analyze
