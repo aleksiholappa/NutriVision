@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'
-import axios from 'axios';
-import './ProfilePage.css';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import "./ProfilePage.css";
 
-const baseUrl = '/api/profile'
+const baseUrl = "/api/profile";
 
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,19 +14,25 @@ const ProfilePage: React.FC = () => {
   const [dislikedDishes, setDislikedDishes] = useState<string[]>([]);
   const [window, setWindow] = useState(false);
   const [feature, setFeature] = useState<string | null>(null);
-  const [input, setInput] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');  
+  const [input, setInput] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const response = await axios.get(baseUrl, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
-        const { healthConditions, diet, allergies, favoriteDishes, dislikedDishes } = response.data;
+        const {
+          healthConditions,
+          diet,
+          allergies,
+          favoriteDishes,
+          dislikedDishes,
+        } = response.data;
         setHealthConditions(healthConditions || []);
         setDiet(diet || []);
         setAllergies(allergies || []);
@@ -43,91 +49,104 @@ const ProfilePage: React.FC = () => {
 
   const handleAdd = () => {
     if (!input.trim() || !feature) return;
-    if (feature === 'healthConditions') {
+    if (feature === "healthConditions") {
       setHealthConditions([...healthConditions, input.trim()]);
     }
-    if (feature === 'diet') {
+    if (feature === "diet") {
       setDiet([...diet, input.trim()]);
     }
-    if (feature === 'allergies') {
+    if (feature === "allergies") {
       setAllergies([...allergies, input.trim()]);
     }
-    if (feature === 'favoriteDishes') {
+    if (feature === "favoriteDishes") {
       setFavoriteDishes([...favoriteDishes, input.trim()]);
     }
-    if (feature === 'dislikedDishes') {
+    if (feature === "dislikedDishes") {
       setDislikedDishes([...dislikedDishes, input.trim()]);
     }
-    setInput('');
+    setInput("");
     setWindow(false);
   };
 
   const handleRemove = (feature: string, value: string) => {
-    if (feature === 'healthConditions') {
+    if (feature === "healthConditions") {
       setHealthConditions(healthConditions.filter((item) => item !== value));
     }
-    if (feature === 'diet') {
+    if (feature === "diet") {
       setDiet(diet.filter((item) => item !== value));
     }
-    if (feature === 'allergies') {
+    if (feature === "allergies") {
       setAllergies(allergies.filter((item) => item !== value));
     }
-    if (feature === 'favoriteDishes') {
+    if (feature === "favoriteDishes") {
       setFavoriteDishes(favoriteDishes.filter((item) => item !== value));
     }
-    if (feature === 'dislikedDishes') {
+    if (feature === "dislikedDishes") {
       setDislikedDishes(dislikedDishes.filter((item) => item !== value));
     }
   };
-    
+
   const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();    
+    event.preventDefault();
     try {
-      const response = await axios.post(baseUrl, {
-        healthConditions,
-        diet,
-        allergies,
-        favoriteDishes,
-        dislikedDishes,
-      }, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      const response = await axios.post(
+        baseUrl,
+        {
+          healthConditions,
+          diet,
+          allergies,
+          favoriteDishes,
+          dislikedDishes,
         },
-      });
-      setSuccess('Profile updated');
-      setError('');
-      navigate('/chat');
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setSuccess("Profile updated");
+      setError("");
+      navigate("/chat");
     } catch (error: any) {
       console.error(error.response.data.error);
       setError(error.response.data.error);
-      setSuccess('');
+      setSuccess("");
     }
   };
-    
+
   return (
     <div className="ProfilePageContainer">
       <div className="ProfileContainer">
         <h2>Profile</h2>
         <button type="submit" className="SaveButton" onClick={handleSubmit}>
-        Save
+          Save
         </button>
       </div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {success && <p style={{ color: 'green' }}>{success}</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      {success && <p style={{ color: "green" }}>{success}</p>}
       <form>
         <div>
           <div className="FeatureContainer">
             <label>Health conditions</label>
-            <button type="button" className="AddItemButton" onClick={() => { setFeature('healthConditions'); setWindow(true); }}>
-            Add
+            <button
+              type="button"
+              className="AddItemButton"
+              onClick={() => {
+                setFeature("healthConditions");
+                setWindow(true);
+              }}
+            >
+              Add
             </button>
           </div>
           <div className="ItemsContainer">
             {healthConditions.map((item) => (
               <div key={item} className="Item">
                 {item}
-                <button onClick={() => handleRemove('healthConditions', item)}
-                  className="RemoveItemButton">
+                <button
+                  onClick={() => handleRemove("healthConditions", item)}
+                  className="RemoveItemButton"
+                >
                   &#10006;
                 </button>
               </div>
@@ -137,16 +156,25 @@ const ProfilePage: React.FC = () => {
         <div>
           <div className="FeatureContainer">
             <label>Diet</label>
-            <button type="button" className="AddItemButton" onClick={() => { setFeature('diet'); setWindow(true); }}>
-            Add
+            <button
+              type="button"
+              className="AddItemButton"
+              onClick={() => {
+                setFeature("diet");
+                setWindow(true);
+              }}
+            >
+              Add
             </button>
           </div>
           <div className="ItemsContainer">
             {diet.map((item) => (
               <div key={item} className="Item">
                 {item}
-                <button onClick={() => handleRemove('diet', item)}
-                  className="RemoveItemButton">
+                <button
+                  onClick={() => handleRemove("diet", item)}
+                  className="RemoveItemButton"
+                >
                   &#10006;
                 </button>
               </div>
@@ -156,16 +184,25 @@ const ProfilePage: React.FC = () => {
         <div>
           <div className="FeatureContainer">
             <label>Allergies</label>
-            <button type="button" className="AddItemButton" onClick={() => { setFeature('allergies'); setWindow(true); }}>
-            Add
+            <button
+              type="button"
+              className="AddItemButton"
+              onClick={() => {
+                setFeature("allergies");
+                setWindow(true);
+              }}
+            >
+              Add
             </button>
           </div>
           <div className="ItemsContainer">
             {allergies.map((item) => (
               <div key={item} className="Item">
                 {item}
-                <button onClick={() => handleRemove('allergies', item)}
-                  className="RemoveItemButton">
+                <button
+                  onClick={() => handleRemove("allergies", item)}
+                  className="RemoveItemButton"
+                >
                   &#10006;
                 </button>
               </div>
@@ -175,16 +212,25 @@ const ProfilePage: React.FC = () => {
         <div>
           <div className="FeatureContainer">
             <label>Favorite dishes</label>
-            <button type="button" className="AddItemButton" onClick={() => { setFeature('favoriteDishes'); setWindow(true); }}>
-            Add
+            <button
+              type="button"
+              className="AddItemButton"
+              onClick={() => {
+                setFeature("favoriteDishes");
+                setWindow(true);
+              }}
+            >
+              Add
             </button>
           </div>
           <div className="ItemsContainer">
             {favoriteDishes.map((item) => (
               <div key={item} className="Item">
                 {item}
-                <button onClick={() => handleRemove('favoriteDishes', item)}
-                  className="RemoveItemButton">
+                <button
+                  onClick={() => handleRemove("favoriteDishes", item)}
+                  className="RemoveItemButton"
+                >
                   &#10006;
                 </button>
               </div>
@@ -194,16 +240,25 @@ const ProfilePage: React.FC = () => {
         <div>
           <div className="FeatureContainer">
             <label>Disliked dishes</label>
-            <button type="button" className="AddItemButton" onClick={() => { setFeature('dislikedDishes'); setWindow(true); }}>
-            Add
+            <button
+              type="button"
+              className="AddItemButton"
+              onClick={() => {
+                setFeature("dislikedDishes");
+                setWindow(true);
+              }}
+            >
+              Add
             </button>
           </div>
           <div className="ItemsContainer">
             {dislikedDishes.map((item) => (
               <div key={item} className="Item">
                 {item}
-                <button onClick={() => handleRemove('dislikedDishes', item)}
-                  className="RemoveItemButton">
+                <button
+                  onClick={() => handleRemove("dislikedDishes", item)}
+                  className="RemoveItemButton"
+                >
                   &#10006;
                 </button>
               </div>
@@ -211,7 +266,9 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       </form>
-      <button className="ExitButton" onClick={() => navigate('/chat')}>Exit</button>
+      <button className="ExitButton" onClick={() => navigate("/chat")}>
+        Exit
+      </button>
       {window && (
         <div className="Window">
           <div className="WindowContent">
