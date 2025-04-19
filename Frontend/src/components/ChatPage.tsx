@@ -483,6 +483,18 @@ const ChatPage: React.FC = () => {
     navigate("/login", { replace: true });
   };
 
+  const formatText = (text: string) => {
+    return (
+      <span
+        dangerouslySetInnerHTML={{
+          __html: text
+            .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+            .replace(/^\* /gm, "• "),
+        }}
+      ></span>
+    );
+  };
+
   /**
    * Dynamic class names for the chat input container, form, and chat input
    * Helps in resizing the chat input and chat history container
@@ -592,7 +604,7 @@ const ChatPage: React.FC = () => {
                     className="UserImagePreview"
                   />
                 )}
-                {inputState.message}
+                {formatText(inputState.message)}
               </div>
               <div className="BotMessage">
                 <span className="loading-dots">
@@ -613,9 +625,9 @@ const ChatPage: React.FC = () => {
                     className="UserImagePreview"
                   />
                 )}
-                {chat.user.message}
+                {formatText(chat.user.message)}
               </div>
-              <div className="BotMessage">{chat.bot}</div>
+              <div className="BotMessage">{formatText(chat.bot)}</div>
             </div>
           ))}
         </div>
