@@ -14,20 +14,12 @@
   flex-direction: column;
   justify-content: space-between;
   box-sizing: border-box;
-  height: calc(100% - 2rem);
-  width: calc(100% - 5rem);
-  margin-left: 5rem;
-  margin-top: 2rem;
+  height: calc(100% - 60px);
+  width: calc(100% - 60px);
+  margin-left: 60px;
+  margin-top: 60px;
   align-items: center;
   position: absolute;
-}
-
-.ChatContainer h2 {
-  position: absolute;
-  left: 0;
-  top: 0;
-  font-size: 1.5rem;
-  margin-left: 1rem;
 }
 
 .ChatInputContainer {
@@ -243,9 +235,37 @@
   margin-bottom: 1rem;
 }
 
+.CustomAlert {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 16px 24px;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.CloseAlertButton {
+  background-color: #721c24;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 16px;
+}
+
+.CloseAlertButton:hover {
+  background-color: #501217;
+}
+
 .Sidebar {
   width: 60px;
-  background-color: rgb(19, 24, 21);
+  background-color: rgb(56, 56, 56);;
   height: 100%;
   position: fixed;
   left: 0;
@@ -345,25 +365,213 @@
   transition-delay: 0.5s;
 }
 
-.ChatItem button {
-  background: none;
+.ChatItem {
   height: 30px;
-  border: none;
-  color: #818181;
-  font-size: 14px;
-  text-align: left;
   width: 100%;
-  cursor: pointer;
+  position: relative;
+}
+
+.ChatButton {
+  color: #818181;
+  border: none;
+  background: none; 
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
   border-radius: 15px;
   transition: background-color 0.2s ease;
   padding-left: 15px;
+  cursor: pointer;
 }
 
-.ChatItem button:hover {
+.ChatName {
+  text-align: left;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80%;
+}
+
+.DeleteChatButton {
+  color: #818181;
+  border: none;
+  background: none; 
+  position: absolute;
+  border-radius: 50%;
+  height: 25px;
+  width: 25px;
+  right: 5px;
+  top: 2.5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-align: center;
+}
+
+.ChatButton:hover {
   background-color: #6b6b6b94;
 }
 
-.ChatItem button:focus {
+.ChatButton:focus {
   outline: none;
   background-color: #6b6b6bde;
+}
+
+.DeleteChatButton:hover {
+  background-color: #6b6b6b94;
+}
+
+.DeleteChatButton:focus {
+  outline: none;
+  background-color: #6b6b6bde;
+}
+
+.TopBar {
+  position: fixed;
+  top: 0;
+  height: 60px;
+  width: calc(100% - 60px);
+  margin-left: 60px;
+}
+
+.LogoContainer {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  height: 100%;
+  width: 150px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.LogoContainer h2 {
+  position: relative;
+  height: 70%;
+  width: 100%;
+  text-align: left;
+  margin: 0 0 5px 0;
+  line-height: normal;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+.AppVersion {
+  position: relative;
+  margin: 0;
+  height: 30%;
+  width: calc(100% - 10px);
+  text-align: left;
+  line-height: 20%;
+  font-size: 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-left: 10px;
+}
+
+.UserButton {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  height: 40px;
+  width: 40px;
+  border-radius: 25px;
+  background-color: #0084ff;
+  border: none;
+  cursor: pointer;
+}
+
+.UserButton:hover {
+  background-color: #0073e6;
+}
+
+.UserButton:focus {
+  outline: none;
+}
+
+.UserIcon {
+  color: #fff;
+  font-size: 20px;
+  line-height: 40px;
+  text-align: center;
+}
+
+.UserMenu {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  width: 200px;
+  height: 0;
+  background-color: rgb(56, 56, 56);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  transition: height 0.3s ease;
+}
+
+.UserMenu.expanded {
+  height: 100px;
+}
+
+.UserProfileButton {
+  opacity: 0;
+  width: 100%;
+  height: 0;
+  background-color: transparent;
+  border: none;
+  color: #d0d0d0;
+  font-size: 16px;
+  text-align: left;
+  padding-left: 20px;
+  cursor: pointer;
+  transition: opacity 0.3s ease, height 0.3s ease;
+}
+
+.UserMenu.expanded .UserProfileButton {
+  opacity: 1;
+  height: 50px;
+}
+
+.UserProfileButton:hover {
+  background-color: #6b6b6b94;
+}
+
+
+.LogoutButton {
+  opacity: 0;
+  width: 100%;
+  height: 0;
+  background-color: transparent;
+  border: none;
+  color: #d0d0d0;
+  font-size: 16px;
+  text-align: left;
+  padding-left: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.3s ease, height 0.3s ease;
+}
+
+.UserMenu.expanded .LogoutButton {
+  opacity: 1;
+  height: 50px;
+}
+
+.LogoutButton:hover {
+  background-color: #6b6b6b94;
+}
+
+.LogoutButton img {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
 }

@@ -1,53 +1,58 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import './ChatPage.css';
+import React, { useState, useEffect, useRef } from "react";
+import "./ChatPage.css";
+import { useNavigate, useParams } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
+import { APP_VERSION } from "../utils/config";
+import axios from "axios";
+import { useDispatch } from "react-redux";
+import { logout } from "./authSlice";
 
-const baseImageUrl = 'imgApi/recognize';
-const baseLLMUrl = 'llmApi/chat';
+const baseImageUrl = "/imgApi/recognize";
+const baseLLMUrl = "/api/llm";
+const logoutUrl = "/api/login/logout";
+const userUrl = "/api/users";
+const maxFileSize = 2; // 2 MB
 
 const ChatPage: React.FC = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const params = useParams();
   const navigate = useNavigate();
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [chatInput, setChatInput] = useState<string>('');
-  const [chatHistory, setChatHistory] = useState<{ user: { message: string; image: string | null}; bot: string }[]>([]);
+  const [chatInput, setChatInput] = useState<string>("");
+  const [chatHistory, setChatHistory] = useState<
+    { user: { message: string; image: File | null }; bot: string }[]
+  >([]);
   const chatHistoryRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [userMessagePreview, setUserMessagePreview] = useState<{ message: string; image: string | null }>({
-    message: '',
-    image: null,
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [newChat, setNewChat] = useState<boolean>(false);
+  const [inputState, setInputState] = useState<{
+    message: string;
+    imagePreview: string | null;
+  }>({
+    message: "",
+    imagePreview: null,
   });
-  const [allChats, setAllChats] = useState<{ id: string; name: string }[]>([
-    { id: '1', name: 'Chat 1' },
-    { id: '2', name: 'Chat 2' },
-    { id: '3', name: 'Chat 3' },
-    { id: '4', name: 'Chat 4' },
-    { id: '5', name: 'Chat 5' },
-    { id: '6', name: 'Chat 6' },
-    { id: '7', name: 'Chat 7' },
-    { id: '8', name: 'Chat 8' },
-    { id: '9', name: 'Chat 9' },
-    { id: '10', name: 'Chat 10' },
-    { id: '11', name: 'Chat 11' },
-  ]);
+  const [allChats, setAllChats] = useState<{ id: string; name: string }[]>([]);
+  const [openUserMenu, setOpenUserMenu] = useState<boolean>(false);
+  const [userIcon, setUserIcon] = useState<string>("U");
+  const dispatch = useDispatch();
 
   /**
    * Handle resizing of the chat input and chat history container
-  */
+   */
   const handleSize = () => {
-
     if (textareaRef.current) {
       // element = chat-input element
       const element = textareaRef.current;
       // parentElement = ChatInputContainer element
       const parentElement = element.parentElement?.parentElement;
-      element.style.height = 'auto';
+      element.style.height = "auto";
       element.style.height = `calc(${element.scrollHeight}px)`;
-  
+
       if (parentElement) {
-        parentElement.style.height = 'auto';
+        parentElement.style.height = "auto";
         if (imagePreview) {
           parentElement.style.height = `calc(${element.scrollHeight}px + 5rem)`;
         } else {
@@ -64,171 +69,273 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     handleSize();
     if ((chatInput.trim().length > 0 || imagePreview) && !loading) {
-      setUserMessagePreview({
+      setInputState({
         message: chatInput.trim(),
-        image: imagePreview,
+        imagePreview: imagePreview,
       });
     }
   }, [chatInput, imagePreview]);
 
   useEffect(() => {
+    if (localStorage.getItem("token") && !newChat) {
+      const latestChatId: string | null = params["chat-id"] || null;
+      console.log("Latest chat ID:", latestChatId);
+      loadAllChats();
+      if (latestChatId) {
+        console.log("Loading chat history for chat ID:", latestChatId);
+        loadChatHistory(latestChatId);
+      }
+    }
+    setNewChat(false);
+    return () => {
+      if (params["chat-id"] !== undefined) {
+        window.location.reload();
+      }
+    };
+  }, [params]);
+
+  useEffect(() => {
+    handleUserIcon();
+  }, []);
+
+  const handleUserIcon = async () => {
+    const response = await axios.get(userUrl, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    if (response.status !== 200) {
+      throw new Error("Failed to fetch user data");
+    }
+    const data = response.data;
+    const userIcon = data.username.charAt(0).toUpperCase();
+    setUserIcon(userIcon);
+  };
+
+  useEffect(() => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
-    if (userId){
-      loadChatHistory();
-    }
-  }, [chatHistory, userId]);
+  }, []);
 
   /**
    * Load chat history from the backend
    */
-  const loadChatHistory = async () => {
+  const loadChatHistory = async (latestChatId: string) => {
     try {
-      const response = await fetch(baseLLMUrl + `/chat_history/${userId}`);
-      const data = await response.json();
-      const formattedHistory = data.map((item: any) => ({
-        user: item.user_message,
-        bot: item.bot_message,
-      }));
-      setChatHistory(formattedHistory);
+      if (latestChatId) {
+        const response = await axios.get(
+          `${baseLLMUrl}/chat_one/${latestChatId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        if (response.status !== 200) {
+          throw new Error("Failed to fetch chat history");
+        }
+        const data = response.data;
+
+        console.log("Chat history: ", data);
+        const history = data
+          .map((item: any) => {
+            let file: File | null = null;
+
+            if (item.image) {
+              const byteString = atob(item.image.split(",")[1]); // Decode Base64
+              const mimeString = item.image
+                .split(",")[0]
+                .split(":")[1]
+                .split(";")[0];
+
+              const byteArray = new Uint8Array(byteString.length);
+              for (let i = 0; i < byteString.length; i++) {
+                byteArray[i] = byteString.charCodeAt(i);
+              }
+
+              const blob = new Blob([byteArray], { type: mimeString });
+              file = new File([blob], "image.png", { type: mimeString });
+            }
+
+            let bot_message = "";
+            const image_result = item.image_result;
+            const nutrition_message = item.nutrition_message;
+            const bot_reply = item.bot_message;
+
+            if (image_result) {
+              bot_message = `Recognized food items from the image:\n\n${image_result}\n\n${bot_reply}`;
+            } else if (nutrition_message) {
+              bot_message = `${nutrition_message}\n\n${bot_reply}`;
+            } else {
+              bot_message = bot_reply;
+            }
+
+            return {
+              user: {
+                message: item.user_message,
+                image: file,
+              },
+              bot: bot_message.trim(),
+            };
+          })
+          .reverse();
+        setChatHistory(history);
+      }
     } catch (error) {
-      console.error('Error loading chat history', error)
+      console.error("Error loading chat history", error);
     }
-  }
+  };
+
+  /**
+   * Load all chats from the backend
+   */
+  const loadAllChats = async () => {
+    try {
+      const response = await axios.get(baseLLMUrl + "/chat_history", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const data = response.data;
+      console.log("All chats: ", data);
+      const allChats = data
+        .map((item: any) => ({
+          id: item.id,
+          name: item.name,
+        }))
+        .reverse();
+      setAllChats(allChats);
+    } catch (error) {
+      console.error("Error loading chat history", error);
+    }
+  };
 
   /**
    * Handle image upload event
-   * 
+   *
    * @param event - Change event for the image upload input
    */
-  const handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void = (event) => {
+  const handleImageUpload: (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => void = (event) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
+
+      const maxSize = maxFileSize * 1024 * 1024;
+      if (file.size > maxSize) {
+        setAlertMessage(
+          `File too large. Please select a file smaller than ${maxFileSize} MB.`
+        );
+        event.target.value = "";
+        return;
+      }
+
       setImage(file);
       setImagePreview(URL.createObjectURL(file));
 
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
   /**
    * Handle image recognition
-   * 
+   *
    * @returns - Image recognition result
    */
-  const handleImageRecognition = async (): Promise<string> => {
-    if (!image) return '';
+  const handleImageRecognition = async (image: File): Promise<string> => {
+    if (!image) return "";
 
     const formData = new FormData();
-    formData.append('image', image);
+    formData.append("image", image);
 
     try {
-      const response = await fetch(baseImageUrl, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await axios.post(baseImageUrl, formData);
 
-      const data = await response.json();
-      console.log('Image recognition result:', data);
+      const data = response.data;
+      if (response.status !== 200) {
+        throw new Error("Failed to recognize image");
+      }
       return data;
     } catch (error) {
-      console.error('Error recognizing image:', error);
-      return '';
+      console.error("Error recognizing image:", error);
+      return "";
     }
   };
-  
+
   /**
    * Handle LLM chat with the backend
-   * 
+   *
    * @param userMessage - User message
    * @param result - Image recognition result
    */
-  const handleLLMChat = async (userMessage: string, result: string) => {
+  const handleLLMChat = async (
+    userMessage: string,
+    result: string | null,
+    image: File | null,
+    chatId: string | null = null
+  ) => {
+    if (!chatId) {
+      setAlertMessage("Chat ID is not available");
+      return;
+    }
+
     try {
-      const userId = localStorage.getItem('userId');
-      if (!userId) {
-        console.error('User ID not found!');
-        return;
-      }
+      const formData = new FormData();
+      formData.append("message", userMessage);
+      formData.append("chatId", chatId);
+      if (result) formData.append("result", result);
+      if (image) formData.append("image", image);
 
-      console.log('➡ Sending message to backend:', userMessage, 'Result:', result);
-      
-      if (!userMessage) {
-        userMessage = '.'
-      }
-
-      const response = await fetch(baseLLMUrl, {
-        method: 'POST',
+      console.log(
+        "➡ Sending message to backend:",
+        userMessage,
+        "Result:",
+        result,
+        "Chat ID:",
+        chatId
+      );
+      const response = await axios.post(baseLLMUrl + "/chat", formData, {
         headers: {
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify(
-          { 
-            message: userMessage,
-            userId: userId,  
-            result: result
-          }
-        ),
       });
 
-      if (userMessage === '.') {
-        userMessage = '';
+      if (response.status !== 200) {
+        throw new Error("Failed to fetch LLM response");
       }
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch LLM response')
-      }
-
-      const data = await response.json();
-      let resultInfo = '';
-      if (result) {
-        try {
-          const foodItems = JSON.parse(result.replace(/'/g, '"'));
-          resultInfo = foodItems.map((item: any) => 
-          `\n${item.name} (confidence: ${item.confidence})\n` +
-          `    Macronutrients for ${item.name} per 100 grams:\n` +
-          `    Energy: ${item.macronutrients.Kilocalories} kcal\n` +
-          `    Protein: ${item.macronutrients.Protein} g\n` +
-          `    Carbohydrates: ${item.macronutrients.Carbohydrates} g\n` +
-          `    Fat: ${item.macronutrients.Fat} g\n`
-          ).join('\n');
-        } catch (error) {
-          console.error('Error parsing image recognition result:', error);
-        }
-      }
-      const botMessage = `${resultInfo ? `Recognized food items from the image: ${resultInfo}\n\n` : ''}${data.nutrition_message}\n\n${data.response}`.trim();
-
-      setChatHistory(
-        [
-          {
-            user: {
-              message: userMessage,
-              image: userMessagePreview.image,
-            },
-            bot: botMessage
-          }, ...chatHistory
-        ]
-      );
-      setTimeout(() => {}, 100000);
-    } catch (error) {
-      setChatHistory(
-        [
-          { 
-            user: { 
-              message: userMessage, 
-              image: userMessagePreview.image
-            }, 
-            bot: 'Sorry, I am unable to process your request at the moment.' 
-          }, ...chatHistory
-        ]
-      );
+      const data = await response.data;
+      const botMessage = data.response;
+      console.log("Bot Message:", botMessage);
+      setChatHistory([
+        {
+          user: {
+            message: userMessage,
+            image: image,
+          },
+          bot: botMessage,
+        },
+        ...chatHistory,
+      ]);
+    } catch (error: any) {
+      setChatHistory([
+        {
+          user: {
+            message: userMessage,
+            image: image,
+          },
+          bot: "Sorry, I am unable to process your request at the moment.",
+        },
+        ...chatHistory,
+      ]);
+      console.error("Error fetching LLM response:", error);
     }
-  }
+  };
 
   /**
    * Handle chat submission event
-   * 
+   *
    * @param event - Form event for the chat submission
    */
   const handleChatSubmit = async (event: React.FormEvent) => {
@@ -241,62 +348,169 @@ const ChatPage: React.FC = () => {
       if (chatHistoryRef.current) {
         chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
       }
-      
+
       const userMessage = chatInput.trim();
-      
+
+      let chatId: string | null = params["chat-id"] || null;
+      if (!chatId) {
+        chatId = await handleCreateNewChat(userMessage);
+      }
+
       setLoading(true);
-      setChatInput('');
+      setChatInput("");
       setImage(null);
       setImagePreview(null);
 
-      let recognitionResult = '';
+      let recognitionResult = "";
       if (userImage) {
-        recognitionResult = await handleImageRecognition();
+        recognitionResult = await handleImageRecognition(userImage);
       }
-      await handleLLMChat(userMessage, recognitionResult);
+      await handleLLMChat(userMessage, recognitionResult, userImage, chatId);
     } catch (error) {
-      console.error('Error submitting chat:', error);
+      console.error("Error submitting chat:", error);
     } finally {
+      console.log("Chat submission completed");
       setLoading(false);
-      setUserMessagePreview({ message: '', image: null });
+      setInputState({ message: "", imagePreview: null });
     }
+  };
+
+  const handleCreateNewChat = async (userMessage: string) => {
+    if (!userMessage) userMessage = "New Chat";
+    const newChatId = uuidv4();
+    setNewChat(true);
+    setAllChats((prev) => [{ id: newChatId, name: userMessage }, ...prev]);
+    const response = await axios.post(
+      baseLLMUrl + "/chat_history",
+      JSON.stringify({
+        chatId: newChatId,
+        chatName: userMessage,
+      }),
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "content-type": "application/json",
+        },
+      }
+    );
+    if (response.status !== 200) {
+      throw new Error("Failed to create new chat");
+    }
+    const data = response.data;
+    console.log("New chat created:", data);
+    navigate(`/chat/${newChatId}`, { replace: true });
+    return newChatId;
   };
 
   /**
    * Handle key down event for the chat input
    * Enables sending the chat message on pressing Enter
    * Adds a new line on pressing Shift + Enter
-   * 
+   *
    * @param e - Keyboard event for the chat input
    */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       if (e.shiftKey) {
         return;
       } else {
         e.preventDefault();
-        document
-          .querySelector('form')
-          ?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        if (!loading) {
+          document
+            .querySelector("form")
+            ?.dispatchEvent(
+              new Event("submit", { cancelable: true, bubbles: true })
+            );
+        }
       }
     }
+  };
+
+  /**
+   * Handle new chat button click event
+   */
+  const handleNewChat = () => {
+    setChatInput("");
+    setImage(null);
+    setImagePreview(null);
+    setInputState({ message: "", imagePreview: null });
+    setChatHistory([]);
+    navigate("/chat", { replace: true });
+  };
+
+  const handleDeleteChat = async (chatId: string) => {
+    const response = await axios.delete(baseLLMUrl + "/chat_history", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "content-type": "application/json",
+      },
+      data: JSON.stringify({
+        chatId: chatId,
+      }),
+    });
+    if (response.status !== 200) {
+      throw new Error("Failed to delete chat");
+    }
+    const data = response.data;
+    console.log("Chat deleted:", data);
+    setAllChats((prev) => prev.filter((chat) => chat.id !== chatId));
+    if (params["chat-id"] === chatId) {
+      handleNewChat();
+    }
+  };
+
+  /**
+   * Handle logout button click event
+   */
+  const handleLogout = async () => {
+    const response = await axios.post(
+      logoutUrl,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        withCredentials: true,
+      }
+    );
+    if (response.status !== 200) {
+      throw new Error("Failed to logout");
+    }
+    const data = response.data;
+    localStorage.removeItem("token");
+    dispatch(logout());
+    console.log("Logout successful:", data);
+    navigate("/login", { replace: true });
   };
 
   /**
    * Dynamic class names for the chat input container, form, and chat input
    * Helps in resizing the chat input and chat history container
    */
-  const inputContainerClass = `ChatInputContainer ${imagePreview ? 'hasImagePreview' : ''}`; 
-  const formClass = `ChatForm ${imagePreview ? 'hasImagePreview' : ''}`;
-  const chatInputClass = `chat-input ${imagePreview ? 'hasImagePreview' : ''}`;
+  const inputContainerClass = `ChatInputContainer ${
+    imagePreview ? "hasImagePreview" : ""
+  }`;
+  const formClass = `ChatForm ${imagePreview ? "hasImagePreview" : ""}`;
+  const chatInputClass = `chat-input ${imagePreview ? "hasImagePreview" : ""}`;
 
   /**
-   * Render the ChatPage component 
+   * Render the ChatPage component
    */
   return (
     <div className="ChatPageContainer">
+      {alertMessage && (
+        <div className="CustomAlert">
+          <p>{alertMessage}</p>
+          <button
+            onClick={() => setAlertMessage(null)}
+            className="CloseAlertButton"
+          >
+            Close
+          </button>
+        </div>
+      )}
       <div className="Sidebar">
-        <button className="NewChatButton" onClick={() => navigate('/chat')}>
+        <button className="NewChatButton" onClick={handleNewChat}>
           <span className="PlusIcon">&#43;</span>
           <span className="NewChatText">New Chat</span>
         </button>
@@ -304,39 +518,99 @@ const ChatPage: React.FC = () => {
           <h2>Latest</h2>
           {allChats.map((chat, index) => (
             <div key={index} className="ChatItem">
-              <button onClick={() => navigate(`/chat/${chat.id}`)}>
-                {chat.name}
+              <button
+                onClick={() => navigate(`/chat/${chat.id}`, { replace: true })}
+                className="ChatButton"
+              >
+                <div className="ChatName">{chat.name}</div>
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteChat(chat.id);
+                }}
+                className="DeleteChatButton"
+              >
+                &#10006; {/* Unicode cross mark */}
               </button>
             </div>
           ))}
         </div>
       </div>
+      <div className="TopBar">
+        <div className="LogoContainer">
+          <h2>NutriVision</h2>
+          <span className="AppVersion">{APP_VERSION}</span>
+        </div>
+        <button
+          className="UserButton"
+          onClick={() => {
+            setOpenUserMenu(!openUserMenu);
+          }}
+        >
+          <span className="UserIcon">{userIcon}</span>
+        </button>
+      </div>
+      <div className={`UserMenu ${openUserMenu ? "expanded" : ""}`}>
+        <button
+          className="UserProfileButton"
+          onClick={() => {
+            navigate("/profile");
+          }}
+        >
+          Profile
+        </button>
+        <button
+          className="LogoutButton"
+          onClick={() => {
+            handleLogout();
+          }}
+        >
+          <img src="/logout-24.png" alt="Logout Icon" className="LogoutIcon" />
+          Log Out
+        </button>
+      </div>
+      {alertMessage && (
+        <div className="CustomAlert">
+          <p>{alertMessage}</p>
+          <button
+            onClick={() => setAlertMessage(null)}
+            className="CloseAlertButton"
+          >
+            Close
+          </button>
+        </div>
+      )}
       <div className="ChatContainer">
-        <h2>NutriVision</h2>
         <div className="ChatHistoryContainer" ref={chatHistoryRef}>
-          {loading && 
+          {loading && (
             <div className="ChatBubble">
               <div className="UserMessage">
-                {userMessagePreview.image && (
-                  <img src={userMessagePreview.image} alt="User Preview" className="UserImagePreview" />
+                {inputState.imagePreview && (
+                  <img
+                    src={inputState.imagePreview}
+                    alt="User Preview"
+                    className="UserImagePreview"
+                  />
                 )}
-                {userMessagePreview.message}
+                {inputState.message}
               </div>
               <div className="BotMessage">
                 <span className="loading-dots">
-                  <span>•</span><span>•</span><span>•</span>
+                  <span>•</span>
+                  <span>•</span>
+                  <span>•</span>
                 </span>
-              </div>  
+              </div>
             </div>
-          }
+          )}
           {chatHistory.map((chat, index) => (
             <div key={index} className="ChatBubble">
               <div className="UserMessage">
                 {chat.user.image && (
-                  <img 
-                    src={chat.user.image} 
+                  <img
+                    src={URL.createObjectURL(chat.user.image)}
                     alt="User Preview"
-                    className="UserImagePreview" 
+                    className="UserImagePreview"
                   />
                 )}
                 {chat.user.message}
@@ -355,7 +629,7 @@ const ChatPage: React.FC = () => {
             <button
               type="button"
               className="upload-button"
-              onClick={() => document.getElementById('image-upload')?.click()}
+              onClick={() => document.getElementById("image-upload")?.click()}
             >
               &#43; {/* Plus icon */}
             </button>
@@ -363,7 +637,7 @@ const ChatPage: React.FC = () => {
               type="file"
               id="image-upload"
               accept="image/*"
-              style={{ display: 'none' }}
+              style={{ display: "none" }}
               onChange={handleImageUpload}
             />
             <textarea
@@ -385,8 +659,9 @@ const ChatPage: React.FC = () => {
   );
 };
 
-// TODO: Add logout button
-// TODO: Add earlier chats window
-// TODO: Add expandable left sidebar with chat history
+// TODO: Add documentation
+// TODO: Add logic to send abort signal to the backend and the LLM api
+// TODO: Add necessary changes for the production build
+// TODO: Deploy the app
 
 export default ChatPage;

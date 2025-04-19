@@ -1,8 +1,8 @@
-import mongoose, { Document, Schema } from 'mongoose';
-import bcrypt from 'bcrypt';
+import mongoose, { Document, Schema } from "mongoose";
+import bcrypt from "bcrypt";
 
 export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
@@ -11,67 +11,69 @@ export interface IUser extends Document {
   email: string;
   password: string;
   comparePassword: (password: string) => Promise<boolean>;
-  diet: string;
+  healthConditions: string[];
+  diet: string[];
   allergies: string[];
   favoriteDishes: string[];
-  likes: string[];
-  dislikes: string[];
+  dislikedDishes: string[];
   chatHistory: ChatMessage[];
 }
 
+const UserSchema: Schema = new Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    healthConditions: {
+      type: [String],
+      default: [],
+    },
+    diet: {
+      type: [String],
+      default: [],
+    },
+    allergies: {
+      type: [String],
+      default: [],
+    },
+    favoriteDishes: {
+      type: [String],
+      default: [],
+    },
+    dislikedDishes: {
+      type: [String],
+      default: [],
+    },
+    chatHistory: {
+      type: [
+        {
+          role: { type: String, required: true },
+          content: { type: String, required: true },
+        },
+      ],
+      default: [],
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
-const UserSchema: Schema = new Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  diet: {
-    type: String,
-    default: 'none',
-  },
-  allergies: {
-    type: [String],
-    default: [],
-  },
-  favoriteDishes: {
-    type: [String],
-    default: [],
-  },
-  likes: {
-    type: [String],
-    default: [],
-  },
-  dislikes: {
-    type: [String],
-    default: [],
-  },
-  chatHistory: {
-    type: [
-      {
-        role: {type: String, required: true},
-        content: {type: String, required: true},
-      },
-    ],
-    default: [],
-  },
-}, {
-  timestamps: true,
-});
-
-UserSchema.pre<IUser>('save', async function (next) {
-  if (!this.isModified('password')) {
+UserSchema.pre<IUser>("save", async function (next) {
+  if (!this.isModified("password")) {
     return next();
   }
   try {
@@ -83,10 +85,12 @@ UserSchema.pre<IUser>('save', async function (next) {
   }
 });
 
-UserSchema.methods.comparePassword = async function (password: string): Promise<boolean> {
+UserSchema.methods.comparePassword = async function (
+  password: string,
+): Promise<boolean> {
   return bcrypt.compare(password, this.password);
 };
 
-const User = mongoose.model<IUser>('User', UserSchema);
+const User = mongoose.model<IUser>("User", UserSchema);
 
 export default User;

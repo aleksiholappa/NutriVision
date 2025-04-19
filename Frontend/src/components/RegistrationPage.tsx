@@ -1,23 +1,23 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import './RegistrationPage.css';
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import "./RegistrationPage.css";
 
-const baseUrl = '/api/register'
+const baseUrl = "/api/register";
 
 const RegistrationPage: React.FC = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
@@ -27,15 +27,15 @@ const RegistrationPage: React.FC = () => {
         email,
         password,
       });
-      setSuccess('Registration successful!');
-      setError('');
-      navigate('/registration-success');
+      setSuccess("Registration successful!");
+      setError("");
+      navigate("/registration-success");
     } catch (error: any) {
       console.error(error.response.data.error);
       setError(error.response.data.error);
-      setSuccess('');
+      setSuccess("");
       setTimeout(() => {
-        setError('');
+        setError("");
       }, 5000);
     }
   };
@@ -43,8 +43,8 @@ const RegistrationPage: React.FC = () => {
   return (
     <div className="RegistrationPageContainer">
       <h2>Register</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {success && <p style={{ color: 'green' }}>{success}</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      {success && <p style={{ color: "green" }}>{success}</p>}
       <form onSubmit={handleSubmit}>
         <div>
           <label>Username</label>
