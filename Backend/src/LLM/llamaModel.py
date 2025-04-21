@@ -269,9 +269,10 @@ def chat_handler():
                         f"    Carbohydrates: {carbs} g\n",
                         f"    Fat: {fat} g\n\n",
                     ]
-                    info_lines.append(lines)
+                    info_lines.extend(lines)
 
                 image_result_info = "".join(info_lines)
+                logger.info("Image recognition result: %s", image_result_info)
                 history_entry["image_result"] = image_result_info
             else:
                 logger.warning("Parsed image_result is not a list")
@@ -370,7 +371,7 @@ def get_nutrition_message(user_input):
             continue
 
         # If food ID found, format the nutritional info and ask the model to analyze
-        lines.append(
+        lines.extend(
             [
                 f"Here is the nutritional analysis per 100g from Fineli for {food.title()}:\n",
                 f"Calories: {nutrition_info['Calories']:.3f} kcal\n",
