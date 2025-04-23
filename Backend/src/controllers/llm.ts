@@ -42,19 +42,32 @@ llmRouter.post(
 
     logger.info("LLM Message:", formData);
 
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    req.on("close", () => {
+      logger.info("Client disconnected, aborting LLM API request...");
+      controller.abort();
+    });
+
     try {
       const llmResponse = await axios.post(baseUrl + "/chat", formData, {
         headers: formData.getHeaders(),
+        signal,
       });
 
       logger.info("LLM Response:", llmResponse.data);
 
       res.status(200).json(llmResponse.data);
     } catch (err: any) {
-      logger.err("Error calling LLM API:", err.message);
-      next(err);
+      if (axios.isCancel(err)) {
+        logger.info("LLM API request canceled:", err.message);
+      } else {
+        logger.err("Error calling LLM API:", err.message);
+        next(err);
+      }
     }
-  },
+  }
 );
 
 // Get chat history from the LLM
@@ -75,7 +88,7 @@ llmRouter.get(
     try {
       const llmResponse = await axios.get(
         baseUrl + `/chat_history/${userId}`,
-        {},
+        {}
       );
 
       logger.info("LLM Response:", llmResponse.data);
@@ -85,7 +98,7 @@ llmRouter.get(
       logger.err("Error calling LLM API:", err.message);
       next(err);
     }
-  },
+  }
 );
 
 llmRouter.post(
@@ -115,7 +128,7 @@ llmRouter.post(
       logger.err("Error calling LLM API:", err.message);
       next(err);
     }
-  },
+  }
 );
 
 llmRouter.delete(
@@ -146,7 +159,7 @@ llmRouter.delete(
       logger.err("Error calling LLM API:", err.message);
       next(err);
     }
-  },
+  }
 );
 
 // Get chat history for a specific chat ID
@@ -180,7 +193,7 @@ llmRouter.get(
       logger.err("Error calling LLM API:", err.message);
       next(err);
     }
-  },
+  }
 );
 
 export default llmRouter;

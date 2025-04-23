@@ -14,19 +14,24 @@ const userUrl = "/api/users";
 const maxFileSize = 2; // 2 MB
 
 const ChatPage: React.FC = () => {
-  const params = useParams();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const params = useParams();
+  const chatHistoryRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState<string>("");
-  const [chatHistory, setChatHistory] = useState<
-    { user: { message: string; image: File | null }; bot: string }[]
-  >([]);
-  const chatHistoryRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [newChat, setNewChat] = useState<boolean>(false);
+  const [allChats, setAllChats] = useState<{ id: string; name: string }[]>([]);
+  const [openUserMenu, setOpenUserMenu] = useState<boolean>(false);
+  const [userIcon, setUserIcon] = useState<string>("U");
+  const [chatHistory, setChatHistory] = useState<
+    { user: { message: string; image: File | null }; bot: string }[]
+  >([]);
   const [inputState, setInputState] = useState<{
     message: string;
     imagePreview: string | null;
@@ -34,10 +39,6 @@ const ChatPage: React.FC = () => {
     message: "",
     imagePreview: null,
   });
-  const [allChats, setAllChats] = useState<{ id: string; name: string }[]>([]);
-  const [openUserMenu, setOpenUserMenu] = useState<boolean>(false);
-  const [userIcon, setUserIcon] = useState<string>("U");
-  const dispatch = useDispatch();
 
   /**
    * Handle resizing of the chat input and chat history container
@@ -77,6 +78,21 @@ const ChatPage: React.FC = () => {
   }, [chatInput, imagePreview]);
 
   useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        console.log("Abort signal sent to the backend");
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
     if (localStorage.getItem("token") && !newChat) {
       const latestChatId: string | null = params["chat-id"] || null;
       console.log("Latest chat ID:", latestChatId);
@@ -98,6 +114,11 @@ const ChatPage: React.FC = () => {
     handleUserIcon();
   }, []);
 
+  /**
+   * Handle user icon generation
+   *
+   * Fetches user data from the backend and generates a user icon based on the username
+   */
   const handleUserIcon = async () => {
     const response = await axios.get(userUrl, {
       headers: {
@@ -295,10 +316,14 @@ const ChatPage: React.FC = () => {
         "Chat ID:",
         chatId
       );
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
       const response = await axios.post(baseLLMUrl + "/chat", formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
+        signal: signal,
       });
 
       if (response.status !== 200) {
@@ -319,17 +344,21 @@ const ChatPage: React.FC = () => {
         ...chatHistory,
       ]);
     } catch (error: any) {
-      setChatHistory([
-        {
-          user: {
-            message: userMessage,
-            image: image,
+      if (axios.isCancel(error)) {
+        console.log("Request canceled:", error.message);
+      } else {
+        setChatHistory([
+          {
+            user: {
+              message: userMessage,
+              image: image,
+            },
+            bot: "Sorry, I am unable to process your request at the moment.",
           },
-          bot: "Sorry, I am unable to process your request at the moment.",
-        },
-        ...chatHistory,
-      ]);
-      console.error("Error fetching LLM response:", error);
+          ...chatHistory,
+        ]);
+        console.error("Error fetching LLM response:", error);
+      }
     }
   };
 
@@ -375,6 +404,12 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  /**
+   * Handle creating a new chat
+   *
+   * @param userMessage - User message for the new chat name
+   * @returns - New chat ID
+   */
   const handleCreateNewChat = async (userMessage: string) => {
     if (!userMessage) userMessage = "New Chat";
     const newChatId = uuidv4();
@@ -438,6 +473,11 @@ const ChatPage: React.FC = () => {
     navigate("/chat", { replace: true });
   };
 
+  /**
+   * Handle delete chat button click event
+   *
+   * @param chatId - ID of the chat to be deleted
+   */
   const handleDeleteChat = async (chatId: string) => {
     const response = await axios.delete(baseLLMUrl + "/chat_history", {
       headers: {
@@ -483,6 +523,13 @@ const ChatPage: React.FC = () => {
     navigate("/login", { replace: true });
   };
 
+  /**
+   * Format text for rendering
+   * Replaces **text** with <b>text</b> and adds bullet points for list items
+   *
+   * @param text - Text to format
+   * @returns - Formatted text as JSX
+   */
   const formatText = (text: string) => {
     return (
       <span
@@ -671,7 +718,6 @@ const ChatPage: React.FC = () => {
   );
 };
 
-// TODO: Add documentation
 // TODO: Add logic to send abort signal to the backend and the LLM api
 // TODO: Add necessary changes for the production build
 // TODO: Deploy the app
