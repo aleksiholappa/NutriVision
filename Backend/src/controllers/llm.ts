@@ -42,18 +42,9 @@ llmRouter.post(
 
     logger.info("LLM Message:", formData);
 
-    const controller = new AbortController();
-    const signal = controller.signal;
-
-    req.on("close", () => {
-      logger.info("Client disconnected, aborting LLM API request...");
-      controller.abort();
-    });
-
     try {
       const llmResponse = await axios.post(baseUrl + "/chat", formData, {
         headers: formData.getHeaders(),
-        signal,
       });
 
       logger.info("LLM Response:", llmResponse.data);

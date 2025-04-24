@@ -19,7 +19,6 @@ const ChatPage: React.FC = () => {
   const params = useParams();
   const chatHistoryRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState<string>("");
@@ -76,21 +75,6 @@ const ChatPage: React.FC = () => {
       });
     }
   }, [chatInput, imagePreview]);
-
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        console.log("Abort signal sent to the backend");
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, []);
 
   useEffect(() => {
     if (localStorage.getItem("token") && !newChat) {
@@ -316,14 +300,10 @@ const ChatPage: React.FC = () => {
         "Chat ID:",
         chatId
       );
-      abortControllerRef.current = new AbortController();
-      const signal = abortControllerRef.current.signal;
-
       const response = await axios.post(baseLLMUrl + "/chat", formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        signal: signal,
       });
 
       if (response.status !== 200) {
@@ -717,9 +697,5 @@ const ChatPage: React.FC = () => {
     </div>
   );
 };
-
-// TODO: Add logic to send abort signal to the backend and the LLM api
-// TODO: Add necessary changes for the production build
-// TODO: Deploy the app
 
 export default ChatPage;
