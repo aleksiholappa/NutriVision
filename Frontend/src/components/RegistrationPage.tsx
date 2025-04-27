@@ -22,7 +22,7 @@ const RegistrationPage: React.FC = () => {
     }
 
     try {
-      const response = await axios.post(baseUrl, {
+      await axios.post(baseUrl, {
         username,
         email,
         password,
