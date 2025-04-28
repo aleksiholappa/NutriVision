@@ -128,6 +128,19 @@ def get_recipe_names(input):
     return recipe_names
 
 
+def get_individual_recipes_names(input):
+    recipe_names = []
+    with open("allrecipes.csv", "r", encoding="ISO-8859-1") as file:
+        if "," in input:
+            for item in input.split(","):
+                file.seek(0)
+                reader = csv.DictReader(file)
+                for row in reader:
+                    if item.strip().lower() in row["name"].lower():
+                        recipe_names.append(row["name"])
+    return recipe_names
+
+
 def get_recipes_details(names):
     recipe_details = []
     with open("allrecipes.csv", "r", encoding="ISO-8859-1") as file:
@@ -150,6 +163,21 @@ def filter_recipes(input):
     Return ONLY the exact recipe name, 
     or a comma-separated list of the exact recipe names if multiple recipe names are found in the text.
     If no recipe names are mentioned, return an empty string.
+    Do not add any other items. Do not explain. Do not guess.
+
+    Text: {input}
+    """
+    response = ollama.chat(
+        model="llama3.1", messages=[{"role": "user", "content": prompt}]
+    )
+    return response["message"]["content"].strip()
+
+
+def filter_individual_recipes(input):
+    prompt = f"""
+    Carefully read the following text and extract only the individual food items or dish components mentioned in the input, if any.
+    Return only a comma-separated list of the exact individual recipe names if any individual recipe names are found in the text.
+    If no individual recipe names are mentioned, return an empty string.
     Do not add any other items. Do not explain. Do not guess.
 
     Text: {input}
@@ -419,44 +447,48 @@ def get_prompt(
         logger.info("Recipe request detected, trying to find a recipe")
         extracted_recipes = filter_recipes(user_input)
         recipe_names = get_recipe_names(extracted_recipes)
+        if not recipe_names:
+            extracted_individual_recipes = filter_individual_recipes(user_input)
+            recipe_names = get_individual_recipes_names(extracted_individual_recipes)
         if recipe_names:
             details = get_recipes_details(recipe_names)
             prompt = f"""
-            You are a recipe assistant. Here are the details of the recipes found for the input "{user_input}":
+            You are a recipe assistant. Here are the details of the recipes found for the input "{user_input}", where the user asks a recipe for "{extracted_recipes}":
 
             {details}
             
-            Please pick one of the recipes that fit the best for the given input context and 
-            for the user that has submitted the following information about their health and preferences (empty lists can be ignored):
+            Please pick the recipe(s) that fit the best for the given input and asked recipe context and note also that
+            the user that has submitted the following information about their health and preferences (empty lists can be ignored):
                 - Health conditions: {healthConditions}
                 - Diet: {diet}
                 - Allergies: {allergies}
                 - Favorite dishes: {favouriteDishes}
                 - Disliked dishes: {dislikedDishes}
-            Please provide a summary of the selected recipe, including the name (with mentioning it being from AllRecipes), ingredients, 
+            Please provide a summary of the selected recipe(s), including the name (with mentioning it being from AllRecipes), ingredients, 
             and cooking process and a brief explanation on what possible health benefits could the recipe have for the user.
+            If the selected recipe(s) differ from the original asked recipe noticeably ({extracted_recipes}), mention that and altenative recipes to consider, explicitely.
             """
             chat_history.append({"role": "user", "content": prompt})
 
             return chat_history
+        else:
+            logger.info(
+                "Recipe request detected, but no recipes found from data, trying to generate a recipe"
+            )
+            prompt = f"""
+            You are a recipe assistant. User has submitted the following input "{user_input}", where a recipe for "{extracted_recipes}" is asked:
+            As there was no recipes found for the input, please try to provide a few recipe names that are similar to the asked recipe in the input text.
+            Also note that the user that has submitted the following information about their health and preferences (empty lists can be ignored):
+                - Health conditions: {healthConditions}
+                - Diet: {diet}
+                - Allergies: {allergies}
+                - Favorite dishes: {favouriteDishes}
+                - Disliked dishes: {dislikedDishes}
+            """
 
-        logger.info(
-            "Recipe request detected, but no recipes found from data, trying to generate a recipe"
-        )
-        prompt = f"""
-        Answer to the following input as well as you can: "{user_input}". If it is a question try to answer with your knowledge. 
-        If the input contains a request for a recipe, try to provide a recipe that fits the context of the input.
-        Also take note the user's profile information in your answer, if it would be suitable for the context and the user has provided any information:
-            - User's health conditions: {healthConditions}
-            - User's diet: {diet}
-            - User's allergies: {allergies}
-            - User's favourite dishes: {favouriteDishes}
-            - User's disliked dishes: {dislikedDishes}.
-        """
+            chat_history.append({"role": "user", "content": prompt})
 
-        chat_history.append({"role": "user", "content": prompt})
-
-        return chat_history
+            return chat_history
 
     # If nutrition_message contains nutritional data, give data for model to analyze
     if nutrition_message:
