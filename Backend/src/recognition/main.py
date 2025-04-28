@@ -5,14 +5,20 @@ from typing import Optional
 import logging
 import sys
 import foodrecognition as fr
+import dotenv
+
+dotenv.load_dotenv()
 
 # Configure the logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # Set the desired logging level
+logging_level = (
+    logging.DEBUG if os.getenv("NODE_ENV") == "development" else logging.INFO
+)
+logger.setLevel(logging_level)  # Set the desired logging level
 
 # Create a console handler
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.DEBUG)  # Set the handler's logging level
+console_handler.setLevel(logging_level)  # Set the handler's logging level
 
 # Create a formatter
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
