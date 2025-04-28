@@ -16,6 +16,7 @@ import {
   isTokenBlacklisted,
 } from "./utils/middleware";
 import logger from "./utils/logger";
+import path from "path";
 
 const app = express();
 
@@ -34,6 +35,18 @@ mongoose
 
 app.use(cors());
 app.use(express.static("dist"));
+const frontendRoutes = [
+  "/chat",
+  "/login",
+  "/registration",
+  "/registration-success",
+  "/profile",
+];
+frontendRoutes.forEach((route) => {
+  app.get(route, (_req, res) => {
+    res.sendFile(path.resolve("dist", "index.html"));
+  });
+});
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
