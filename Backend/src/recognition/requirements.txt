@@ -1,2 +1,3 @@
 clarifai-grpc
 fastapi[standard]
+RapidFuzz
