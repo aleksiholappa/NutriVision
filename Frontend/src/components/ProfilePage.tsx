@@ -89,7 +89,7 @@ const ProfilePage: React.FC = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      const response = await axios.post(
+      await axios.post(
         baseUrl,
         {
           healthConditions,

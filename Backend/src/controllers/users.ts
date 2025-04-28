@@ -25,7 +25,7 @@ userRouter.post(
     } catch (err: any) {
       next(err);
     }
-  },
+  }
 );
 
 // Get user data with token
@@ -61,7 +61,7 @@ userRouter.delete("/:id", async (req: Request, res: Response) => {
 });
 
 // Delete all users
-userRouter.delete("/", async (req: Request, res: Response) => {
+userRouter.delete("/", async (_req: Request, res: Response) => {
   await User.deleteMany({});
   res.status(204).end();
 });

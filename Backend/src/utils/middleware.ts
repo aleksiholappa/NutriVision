@@ -10,8 +10,8 @@ interface CustomRequest extends Request {
 
 const requestLogger = (
   request: Request,
-  response: Response,
-  next: NextFunction,
+  _response: Response,
+  next: NextFunction
 ) => {
   const sanitizedBody = { ...request.body };
   if (sanitizedBody.password) {
@@ -25,15 +25,15 @@ const requestLogger = (
   next();
 };
 
-const unknownEndpoint = (request: Request, response: Response) => {
+const unknownEndpoint = (_request: Request, response: Response) => {
   response.status(404).send({ error: "unknown endpoint" });
 };
 
 const errorHandler: ErrorRequestHandler = (
   err: any,
-  request: Request,
+  _request: Request,
   response: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   if (err.name === "CastError") {
     response.status(400).send({ error: "malformatted id" });
@@ -51,7 +51,7 @@ const errorHandler: ErrorRequestHandler = (
 const userExtractor = async (
   request: CustomRequest,
   response: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const authorization = (request as Request).get("Authorization");
@@ -79,7 +79,7 @@ const userExtractor = async (
 const isTokenBlacklisted = (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   const token = req.headers.authorization?.split(" ")[1];
   const refreshToken = req.cookies.refreshToken;
