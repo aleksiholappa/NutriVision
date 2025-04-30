@@ -7,6 +7,7 @@ import loginRouter from "./controllers/login";
 import llmRouter from "./controllers/llm";
 import profileRouter from "./controllers/profile";
 import tokenRouter from "./controllers/token";
+import recognitionRouter from "./controllers/recognition";
 import cookieParser from "cookie-parser";
 import {
   requestLogger,
@@ -37,6 +38,7 @@ app.use(cors());
 app.use(express.static("dist"));
 const frontendRoutes = [
   "/chat",
+  "/chat/*",
   "/login",
   "/registration",
   "/registration-success",
@@ -59,7 +61,7 @@ app.use("/api/login", loginRouter);
 app.use("/api/register", usersRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/token", tokenRouter);
-
+app.use("/api/recognition", recognitionRouter);
 app.use("/api/llm", llmRouter);
 
 app.use(unknownEndpoint);

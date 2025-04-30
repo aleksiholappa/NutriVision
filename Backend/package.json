@@ -5,12 +5,9 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "nodemon",
     "dev:full": "concurrently \"nodemon\" \"cd src/recognition && uvicorn main:app --port 3001 --reload\" \"cd src/LLM && python llamaModel.py\" \"cd ../Frontend && npm run dev\"",
     "build:ui": "rm -rf dist && cd ../Frontend && npm run build && cp -r dist ../Backend",
-    "start": "tsx src/index.ts",
-    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push",
-    "lint": "eslint ."
+    "start": "npm run build:ui && tsx src/index.ts"
   },
   "dependencies": {
     "axios": "^1.8.4",

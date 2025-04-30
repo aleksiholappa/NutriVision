@@ -7,7 +7,7 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import { logout } from "./authSlice";
 
-const baseImageUrl = "/imgApi/recognize";
+const baseImageUrl = "/api/recognition";
 const baseLLMUrl = "/api/llm";
 const logoutUrl = "/api/login/logout";
 const userUrl = "/api/users";
@@ -255,8 +255,12 @@ const ChatPage: React.FC = () => {
     formData.append("image", image);
 
     try {
-      const response = await axios.post(baseImageUrl, formData);
-
+      const response = await axios.post(baseImageUrl, formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
       const data = response.data;
       if (response.status !== 200) {
         throw new Error("Failed to recognize image");

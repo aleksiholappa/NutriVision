@@ -1,0 +1,6 @@
+ollama
+pandas
+requests
+flask
+flask-cors
+pymongo

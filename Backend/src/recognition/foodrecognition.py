@@ -45,10 +45,10 @@ def initialize_model(image_bytes):
 
 
 def get_food_id(food_name, csv_file):
-    with open(csv_file, mode='r', encoding='ISO-8859-1') as file:
+    with open(csv_file, mode="r", encoding="ISO-8859-1") as file:
         matches = {}
         fuzzwords = {}
-        reader = csv.DictReader(file, delimiter=';')
+        reader = csv.DictReader(file, delimiter=";")
         for row in reader:
             food = row["FOODNAME"].split(",")[0].strip().lower()
             food_full = row["FOODNAME"].strip().lower()
@@ -59,7 +59,9 @@ def get_food_id(food_name, csv_file):
             fuzzwords[food] = row["FOODID"]
         if matches:
             return list(matches.values())[0]
-        similarities = process.extractOne(food_name, fuzzwords.keys(), scorer=fuzz.ratio)
+        similarities = process.extractOne(
+            food_name, fuzzwords.keys(), scorer=fuzz.ratio
+        )
         if similarities[1] > 80:
             return fuzzwords[similarities[0]]
     return None
@@ -84,7 +86,7 @@ def get_macronutrients(food_id, csv_file):
             if row[0] == str(food_id) and row[1] in eufdname:
                 value = float(row[2].replace(",", "."))
                 if row[1] == "ENERC":
-                    value = round(value * 0.239, 2) # kJ to kcal
+                    value = round(value * 0.239, 2)  # kJ to kcal
                 macronutrients[eufdname[row[1]]] = value
     return macronutrients
 
