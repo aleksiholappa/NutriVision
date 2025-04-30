@@ -24,4 +24,4 @@ USER app:app
 
 EXPOSE 3001
 
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:3001" , "main:app"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3001", "--workers", "4"]
