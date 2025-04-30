@@ -1,22 +1,26 @@
 FROM python:3.13-slim
 
-RUN apt-get update
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -g 1234 app && \
+    useradd -m -u 1234 -g app app
 
 WORKDIR /app
 
-COPY . /app
+COPY --chown=app:app . /app
+
+RUN mkdir -p /app/uploads && \
+    chown app:app /app/uploads && \
+    chmod 775 /app/uploads
+
+RUN chmod -R 775 /app
 
 RUN pip install --upgrade pip
 
 RUN pip install -r requirements.txt
 
-RUN useradd -ms /bin/bash myuser
-
-RUN chown -R myuser:myuser /app
-
-RUN chmod -R 755 /app
-
-USER myuser
+USER app:app
 
 EXPOSE 3001
 
