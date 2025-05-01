@@ -85,7 +85,6 @@ def sort_foods_input(user_input):
     prompt = f"""
     Carefully read the following text and extract only the food items explicitly mentioned.
     Return ONLY a comma-separated list of the exact food items found in the text.
-    If a food is in plural, try to return it as singluar.
     Ignore words in parentheses unless they are clearly food items.
     If no food items are mentioned, return an empty string.
     Do not add any other items. Do not explain. Do not guess.
@@ -251,13 +250,8 @@ def chat_handler():
     )
     # logger.info("History from DB: %s", history_from_db)
 
-    # Generate the base chat_history with base instructions for the model
-    chat_history = [
-        {
-            "role": "system",
-            "content": "You are a helpful nutrition assistant. Analyze given nutritional information, but do not add any values, and give short feedback of the nutritional values and give better and healthier options.",
-        }
-    ]
+    # Generate the base chat_history
+    chat_history = []
 
     # Handle previous chat history fetched from MongoDB
     if history_from_db and "history" in history_from_db[0]:
@@ -328,13 +322,8 @@ def chat_handler():
     logger.info("Prompt: %s", json.dumps(prompt, indent=2))
 
     # Generate response
-    response = ollama.chat(model="llama3.1", messages=prompt)
+    response = ollama.chat(model="nutrivision", messages=prompt)
     reply = response["message"]["content"].strip()
-    reply = format_response(
-        image_result_info,
-        nutrition_message,
-        reply,
-    )
 
     logger.info("User Message: %s", user_input)
     logger.info("Nutrition message: %s", nutrition_message)
@@ -351,28 +340,15 @@ def chat_handler():
         {"chat_id": chat_id}, {"$push": {"history": history_entry}}
     )
 
-    response_for_frontend = format_response(
-        image_result_info,
-        nutrition_message,
-        reply,
-    )
+    if image_result_info:
+        response_for_frontend = f"Recognized food items from the image:\n\n{image_result_info}\n{reply}"
+    if nutrition_message:
+        response_for_frontend = f"Nutritional values from your input:\n\n{nutrition_message}\n{reply}"
+    else: 
+        response_for_frontend = reply
 
     # Send response for frontend
     return jsonify({"response": response_for_frontend})
-
-
-def format_response(
-    image_result_info,
-    nutrition_message,
-    reply,
-):
-    if image_result_info:
-        return (
-            f"Recognized food items from the image:\n\n{image_result_info}\n\n{reply}"
-        )
-    if nutrition_message:
-        return f"Nutrition message:\n\n{nutrition_message}\n\n{reply}"
-    return reply
 
 
 def get_nutrition_message(user_input):
@@ -381,6 +357,9 @@ def get_nutrition_message(user_input):
     # If no image or recipe detected, treat as a text with food items
     if not food_list:
         logger.info("No food items detected")
+        return ""
+    
+    if "recipe" in user_input:
         return ""
 
     # Define items that should be ignored as a food
@@ -430,13 +409,14 @@ def get_prompt(
     if image_result_info:
         logger.info("Image recognition values detected")
         prompt = f"""
-        Analyze the following image recognition results in the context of the user's query, and take the user's profile information into account, if there is any information available:
+        Analyze the following image recognition results in context of the user's query.
+        Also, take note of the user's profile information in your answer, if necessary and the user has provided any information:
             - User's health conditions: {healthConditions}
             - User's diet: {diet}
             - User's allergies: {allergies}
             - User's favourite dishes: {favouriteDishes}
             - User's disliked dishes: {dislikedDishes}.
-        \n\nImage Results:\n---\n{image_result_info}\n---\n\nUser Query: '{user_input}'
+        \n\nImage recognition results:\n---\n{image_result_info}\n---\n\nUser Query: '{user_input}'
         """
         # Append nutritional information to the chat history for the assistant to process
         chat_history.append({"role": "user", "content": prompt})
@@ -453,7 +433,7 @@ def get_prompt(
         if recipe_names:
             details = get_recipes_details(recipe_names)
             prompt = f"""
-            You are a recipe assistant. Here are the details of the recipes found for the input "{user_input}", where the user asks a recipe for "{extracted_recipes}":
+            Here are the details of the recipes found for the input "{user_input}", where the user asks a recipe for "{extracted_recipes}":
 
             {details}
             
@@ -476,14 +456,15 @@ def get_prompt(
                 "Recipe request detected, but no recipes found from data, trying to generate a recipe"
             )
             prompt = f"""
-            You are a recipe assistant. User has submitted the following input "{user_input}", where a recipe for "{extracted_recipes}" is asked:
-            As there was no recipes found for the input, please try to provide a few recipe names that are similar to the asked recipe in the input text.
-            Also note that the user that has submitted the following information about their health and preferences (empty lists can be ignored):
-                - Health conditions: {healthConditions}
-                - Diet: {diet}
-                - Allergies: {allergies}
-                - Favorite dishes: {favouriteDishes}
-                - Disliked dishes: {dislikedDishes}
+            Answer to the following input as well as you can: "{user_input}".
+            If the input contains a request for a recipe, try to provide a recipe that fits the context of the input.
+            Also, take note the user's profile information in your answer, if it would be suitable for the context and the user has provided any information:
+                - User's health conditions: {healthConditions}
+                - User's diet: {diet}
+                - User's allergies: {allergies}
+                - User's favourite dishes: {favouriteDishes}
+                - User's disliked dishes: {dislikedDishes}.
+
             """
 
             chat_history.append({"role": "user", "content": prompt})
@@ -491,31 +472,18 @@ def get_prompt(
             return chat_history
 
     # If nutrition_message contains nutritional data, give data for model to analyze
-    if nutrition_message:
+    if nutrition_message and "recipe" not in user_input.lower():
         logger.info("Nutritional values detected")
         prompt = f"""
-        You are NutriVision, an intelligent and friendly AI assistant that helps users with nutrition analysis and personalized healthy food suggestions.
-
-        Your job:
-        1. Use the nutritional data provided below to answer food-related questions clearly and accurately.
-        2. If no verified data is available for a food item, try to estimate based on your knowledge, but always add this disclaimer:
-        **DISCLAIMER** Nutritional information not found in the Fineli database. These values might not be correct.
-        3. Always consider the user's profile information in your analysis and recommendations, if the user has provided any information:
+        Analyze the following nutritional data in context of the user's query.
+        Also, take note of the user's profile information in your answer, if it would be suitable for it and the user has provided any information:
             - User's health conditions: {healthConditions}
             - User's diet: {diet}
             - User's allergies: {allergies}
             - User's favourite dishes: {favouriteDishes}
             - User's disliked dishes: {dislikedDishes}.
-        4. Respond naturally to greetings like "Hi", "Hello", and follow-up inputs like "Yes", "No", "Thanks", or questions like "What should I eat instead?" or "Is this healthy?".
-        5. If the user gives vague input or continues the conversation, assume context from the previous message and guide them.
-        6. Keep responses short, helpful, and friendly. Ask clarifying questions if needed.
+        \n\nNutritional data:\n---\n{nutrition_message}\n---\n\nUser Query: '{user_input}'
 
-        Here is the nutritional data for: {user_input}
-        ---
-        {nutrition_message}
-        ---
-
-        Respond as NutriVision:
         """
 
         # Append nutritional information to the chat history for the assistant to process
@@ -526,9 +494,8 @@ def get_prompt(
     # If no image or foods detected, treat the user_input as a normal query
     logger.info("No image or foods detected -> treating as a normal query")
     prompt = f"""
-    Answer to this {user_input} as well as you can. If it is a question try to answer with your knowledge.
-    Respond naturally to greetings like "Hi", "Hello", and follow-up inputs like "Yes", "No", "Thanks", or questions like "What should I eat instead?" or "Is this healthy?".
-    Also take note the user's profile information in your answer, if it would be suitable for it and the user has provided any information:
+    Answer to this user message as well as you can: "{user_input}".
+    Also, take note of the user's profile information in your answer, if it would be suitable for it and the user has provided any information:
         - User's health conditions: {healthConditions}
         - User's diet: {diet}
         - User's allergies: {allergies}
@@ -556,7 +523,7 @@ def create_new_chat(user_id):
             "chat_id": chat_id,
             "chat_name": chat_name,
             "history": [],
-            "createdAt": datetime.now(timezone.utc),
+            "chat_createdAt": datetime.now(timezone.utc),
         }
 
         # Insert new chat to MongoDB
