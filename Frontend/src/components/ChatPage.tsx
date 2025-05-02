@@ -168,14 +168,11 @@ const ChatPage: React.FC = () => {
             const nutrition_message = item.nutrition_message;
             const bot_reply = item.bot_message;
 
-            if (image_result) {
-              bot_message = `Recognized food items from the image:\n\n${image_result}\n\n${bot_reply}`;
-            } else if (nutrition_message) {
-              bot_message = `${nutrition_message}\n\n${bot_reply}`;
-            } else {
-              bot_message = bot_reply;
-            }
-
+            bot_message = formBotMessage(
+              bot_reply,
+              image_result,
+              nutrition_message
+            );
             return {
               user: {
                 message: item.user_message,
@@ -240,6 +237,20 @@ const ChatPage: React.FC = () => {
       setImagePreview(URL.createObjectURL(file));
 
       event.target.value = "";
+    }
+  };
+
+  const formBotMessage = (
+    botMessage: string,
+    imageResult: string | null,
+    nutritionMessage: string | null
+  ) => {
+    if (imageResult) {
+      return `Recognized food items from the image:\n\n${imageResult}\n\n${botMessage}`;
+    } else if (nutritionMessage) {
+      return `${nutritionMessage}\n\n${botMessage}`;
+    } else {
+      return botMessage;
     }
   };
 
@@ -315,15 +326,19 @@ const ChatPage: React.FC = () => {
       }
 
       const data = await response.data;
-      const botMessage = data.response;
-      console.log("Bot Message:", botMessage);
+      const botReply = data.response;
+      const imageResult = data.image_result;
+      const nutritionMessage = data.nutrition_message;
+      let botMessage = "";
+      botMessage = formBotMessage(botReply, imageResult, nutritionMessage);
+      console.log("Bot Message:", botReply);
       setChatHistory([
         {
           user: {
             message: userMessage,
             image: image,
           },
-          bot: botMessage,
+          bot: botMessage.trim(),
         },
         ...chatHistory,
       ]);

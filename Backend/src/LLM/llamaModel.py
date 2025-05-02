@@ -3,14 +3,14 @@ import os
 import json
 import pandas
 import requests
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
 from datetime import datetime
 from bson import Binary
 import base64
 import filetype
-from datetime import datetime, timezone
+from datetime import timezone
 import csv
 import dotenv
 
@@ -221,7 +221,6 @@ def chat_handler():
     image_result_info = ""
     nutrition_message = ""
     reply = ""
-    response_for_frontend = ""
 
     # Convert image as Binary
     image_binary = None
@@ -344,15 +343,14 @@ def chat_handler():
         {"chat_id": chat_id}, {"$push": {"history": history_entry}}
     )
 
-    if image_result_info:
-        response_for_frontend = f"Recognized food items from the image:\n\n{image_result_info}\n{reply}"
-    if nutrition_message:
-        response_for_frontend = f"Nutritional values from your input:\n\n{nutrition_message}\n{reply}"
-    else: 
-        response_for_frontend = reply
-
     # Send response for frontend
-    return jsonify({"response": response_for_frontend})
+    return jsonify(
+        {
+            "response": reply,
+            "image_result": image_result_info,
+            "nutrition_message": nutrition_message,
+        }
+    )
 
 
 def get_nutrition_message(user_input):
@@ -362,7 +360,7 @@ def get_nutrition_message(user_input):
     if not food_list:
         logger.info("No food items detected")
         return ""
-    
+
     if "recipe" in user_input:
         return ""
 
