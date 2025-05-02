@@ -12,6 +12,7 @@ import base64
 import filetype
 from datetime import datetime, timezone
 import csv
+import dotenv
 
 import logging
 
@@ -20,11 +21,14 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+dotenv.load_dotenv()
+
 # Set up Flask app
 app = Flask(__name__)
 CORS(app)
 
 # Set up MongoDB: user URI to connect, create new collection
+PRODUCTION = os.getenv("NODE_ENV") == "production"
 mongo_uri = os.environ.get("MONGODB_URI")
 client = MongoClient(mongo_uri)
 db = client["NutriVision"]
@@ -625,4 +629,7 @@ def delete_chat_history(user_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    if PRODUCTION:
+        app.run(host="0.0.0.0", port=5000, debug=False)
+    else:
+        app.run(debug=True)
