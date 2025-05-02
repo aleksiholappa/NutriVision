@@ -241,16 +241,16 @@ const ChatPage: React.FC = () => {
   };
 
   const formBotMessage = (
-    botMessage: string,
+    botReply: string,
     imageResult: string | null,
     nutritionMessage: string | null
   ) => {
     if (imageResult) {
-      return `Recognized food items from the image:\n\n${imageResult}\n\n${botMessage}`;
+      return `Recognized food items from the image:\n\n${imageResult}\n\n${botReply}`;
     } else if (nutritionMessage) {
-      return `${nutritionMessage}\n\n${botMessage}`;
+      return `${nutritionMessage}\n\n${botReply}`;
     } else {
-      return botMessage;
+      return botReply;
     }
   };
 
